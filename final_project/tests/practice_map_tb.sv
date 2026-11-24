@@ -16,6 +16,8 @@ module practice_map_tb;
         .pixel_addr(pixel), .game_clear(cleared), .game_fail(failed), .flag_alphabet()
     );
 
+    defparam dut.Map4.GATE_SECOND_TICKS = 4;
+
     task tap(input [9:0] key);
         begin
             keys = key;
@@ -104,17 +106,60 @@ module practice_map_tb;
         if (failed !== 0)
             $fatal(1, "Invincibility should suppress river failure");
         invincible = 0;
-        dut.Map4.player1_position.horizontal = 10'd236;
+        dut.Map4.player1_position.horizontal = 10'd236; // Red pad at x=255.
+        dut.Map4.player2_position.horizontal = 10'd255; // One step before the gate.
+        keys = 10'h008;
+        @(negedge clk);
+        dut.Map4.player2_position.horizontal_ticks = 25'd1500000;
+        @(negedge clk);
+        if (dut.Map4.gate_open || dut.Map4.center_x2 !== 10'd274)
+            $fatal(1, "A single pad cannot open the gate or let a player through");
+
+        keys = 0;
+        dut.Map4.player2_position.horizontal = 10'd247; // Blue pad at x=266.
+        @(negedge clk);
+        if (!dut.Map4.gate_open || dut.Map4.gate_ticks !== 12)
+            $fatal(1, "Both colored pads should open the gate for three seconds");
+        h = 10'd542;
+        v = 10'd36;
+        #1;
+        if (pixel !== 17'd213)
+            $fatal(1, "The third timer light should start lit");
+        repeat (4) @(negedge clk);
+        if (dut.Map4.gate_ticks !== 8 || pixel !== 17'd1628)
+            $fatal(1, "The third timer light should turn off with two seconds left");
+        repeat (8) @(negedge clk);
+        if (dut.Map4.gate_open)
+            $fatal(1, "Keeping both pads held should not renew the gate timer");
+
+        dut.Map4.player2_position.horizontal = 10'd254;
+        @(negedge clk);
+        dut.Map4.player2_position.horizontal = 10'd247;
+        @(negedge clk);
+        if (dut.Map4.gate_ticks !== 12)
+            $fatal(1, "Stepping off and back on should rearm the gate");
+
+        dut.Map4.player2_position.horizontal = 10'd255;
+        keys = 10'h008;
+        @(negedge clk);
+        dut.Map4.player2_position.horizontal_ticks = 25'd1500000;
+        @(negedge clk);
+        if (dut.Map4.center_x2 !== 10'd275 || !dut.Map4.gate_open)
+            $fatal(1, "The gate should remain open after leaving the pad");
+        keys = 0;
         dut.Map4.player2_position.horizontal = 10'd266;
         @(negedge clk);
         if ({cleared, failed} !== 2'b10)
             $fatal(1, "Both players reaching their exits should clear the map");
+        repeat (12) @(negedge clk);
+        if (!dut.Map4.gate_open)
+            $fatal(1, "The timer should freeze with the finished round");
 
         tap(10'h100);
         if (selection !== 0 || {cleared, failed} !== 0 ||
-            dut.Map4.feet_y2 !== 10'd198)
+            dut.Map4.feet_y2 !== 10'd198 || dut.Map4.gate_open)
             $fatal(1, "Returning to menu should reset the practice map");
-        $display("PASS: fourth map selection, one-way platform, colored rivers, exits, and round reset");
+        $display("PASS: fourth map selection, one-way platform, bridge, timed gate, exits, and round reset");
         $finish;
     end
 endmodule
