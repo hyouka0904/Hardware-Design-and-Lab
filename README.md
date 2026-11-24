@@ -6,12 +6,12 @@
 
 | 路徑 | 內容 |
 | --- | --- |
-| [`lab0/`](lab0/) 至 [`lab8/`](lab8/) | 各次實驗的 RTL，以及對應的測試或腳位約束 |
-| [`demo1/`](demo1/)、[`demo2/`](demo2/) | VGA 顯示範例 |
+| [`lab/lab0/`](lab/lab0/) 至 [`lab/lab8/`](lab/lab8/) | 各次實驗的 RTL，以及對應的測試或腳位約束 |
+| [`demo/demo1/`](demo/demo1/)、[`demo/demo2/`](demo/demo2/) | VGA 顯示範例 |
 | [`final_project/`](final_project/) | Escape from NTHU 的 RTL、FPGA 約束、圖像 ROM 與模擬測試 |
 | [`final_project_ver2/`](final_project_ver2/) | 另一版期末專題原始碼 |
 | [`common/`](common/)、[`examples/`](examples/)、[`experiments/`](experiments/) | 共用模組與約束、教學範例、實驗程式 |
-| [`ip_lab5/`](ip_lab5/)、[`ip_lab5_test/`](ip_lab5_test/)、[`ip_lab6/`](ip_lab6/) | 鍵盤控制器 IP |
+| [`ip_lab/lab5/`](ip_lab/lab5/)、[`ip_lab5_test/`](ip_lab5_test/)、[`ip_lab/lab6/`](ip_lab/lab6/) | 鍵盤控制器 IP |
 | [`Pictrans/`](Pictrans/)、[`archives/`](archives/) | 圖像素材與轉換工具、原始專題封存 |
 
 各實驗和專題有獨立的頂層模組及腳位配置。同名模組可能出現在不同目錄，請依目標專案選擇來源檔。
