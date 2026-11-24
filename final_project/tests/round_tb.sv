@@ -30,8 +30,8 @@ module round_tb;
         repeat (2) @(negedge clk);
         if ({cleared,failed} !== 0) $fatal(1,"Inactive map affected game");
         release dut.map2_fail;
-        dut.Map1.player_horizontal_displacement=10'd30;
-        dut.Map1.player_vertical_displacement=10'd48;
+        dut.Map1.player1_position.horizontal=10'd30;
+        dut.Map1.player1_position.vertical=10'd48;
         dut.Map1.mech_cnt_v=25'd123;
         repeat (2) @(negedge clk);
         if ({cleared,failed} !== 2'b01 || led !== 16'hf0f0 ||
