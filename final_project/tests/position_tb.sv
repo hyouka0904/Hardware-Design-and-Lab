@@ -4,7 +4,7 @@
 `timescale 1ns/1ps
 module position_tb;
     localparam [3:0] RIGHT = 4'd7, LEFT = 4'd8, UP = 4'd9;
-    localparam [1:0] RISING = 2'd1;
+    localparam [1:0] RISING = 2'd1, FALLING = 2'd2;
 
     reg clk = 0;
     reg reset_position = 1, paused = 0;
@@ -23,6 +23,7 @@ module position_tb;
     initial begin
         @(negedge clk);
         reset_position = 0;
+        @(negedge clk); // Register the beginning of ascent.
         // Start one tick before a step so the test can exercise the real divider.
         dut.horizontal = 10'd20;
         dut.horizontal_ticks = 25'd1500000;
@@ -49,7 +50,16 @@ module position_tb;
         if (horizontal !== 10'd19)
             $fatal(1, "Held direction must step when its own interval elapses");
 
-        $display("PASS: airborne neutral resets horizontal step timing");
+        state = UP;
+        jump = FALLING;
+        @(negedge clk);
+        dut.vertical_ticks = 25'd2000000;
+        jump = RISING;
+        @(negedge clk);
+        if (vertical !== 10'd1 || dut.vertical_ticks !== 25'd0)
+            $fatal(1, "A buffered takeoff must start with a fresh vertical interval");
+
+        $display("PASS: neutral movement, pause, and fresh timing for buffered takeoff");
         $finish;
     end
 endmodule

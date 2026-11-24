@@ -18,6 +18,9 @@ module player_position #(
 
     reg [24:0] horizontal_ticks = 25'd0;
     reg [24:0] vertical_ticks = 25'd0;
+    reg [1:0] previous_jump = GROUNDED;
+    wire airborne = jump == RISING || jump == FALLING;
+    wire new_ascent = jump == RISING && previous_jump != RISING;
 
     always @(posedge clk) begin
         if (reset_position) begin
@@ -44,13 +47,16 @@ module player_position #(
         if (reset_position) begin
             vertical <= START_VERTICAL;
             vertical_ticks <= 25'd0;
-        end else if (!paused && (state == UP || state == LEFT || state == RIGHT)) begin
-            if (jump == GROUNDED) begin
+            previous_jump <= GROUNDED;
+        end else if (!paused) begin
+            previous_jump <= jump;
+            // A buffered landing can enter ascent without a grounded cycle.
+            if (!airborne || new_ascent)
                 vertical_ticks <= 25'd0;
-            end else if (jump == RISING || jump == FALLING) begin
-                if (vertical_ticks < VERTICAL_LIMIT) begin
+            else if (state == UP || state == LEFT || state == RIGHT) begin
+                if (vertical_ticks < VERTICAL_LIMIT)
                     vertical_ticks <= vertical_ticks + 1'b1;
-                end else begin
+                else begin
                     vertical_ticks <= 25'd0;
                     if (jump == RISING)
                         vertical <= vertical + 1'b1;

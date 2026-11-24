@@ -266,7 +266,9 @@ module player_motion #(
     localparam [1:0] GROUNDED = 2'd0, RISING = 2'd1, FALLING = 2'd2;
     localparam COYOTE_WIDTH = $clog2(COYOTE_TICKS + 2);
     localparam BUFFER_WIDTH = $clog2(BUFFER_TICKS + 2);
-    localparam PHASE_WIDTH = $clog2(FALL_TIMEOUT_TICKS + MAX_RISE_TICKS + 2);
+    localparam PHASE_LIMIT = (FALL_TIMEOUT_TICKS > MAX_RISE_TICKS) ?
+                             FALL_TIMEOUT_TICKS : MAX_RISE_TICKS;
+    localparam PHASE_WIDTH = $clog2(PHASE_LIMIT + 2);
 
     reg [COYOTE_WIDTH-1:0] coyote_left;
     reg [BUFFER_WIDTH-1:0] buffer_left;
@@ -276,6 +278,7 @@ module player_motion #(
     wire move_left = keys[1] && !keys[3];
     wire move_right = keys[3] && !keys[1];
     wire jump_pressed = keys[0] && !jump_held;
+    // Coyote time is armed only when stepping off support, never after takeoff.
     wire can_jump = jump == GROUNDED ||
                     (jump == FALLING && (landed || coyote_left != 0));
     wire takeoff = can_jump && (jump_pressed || buffer_left != 0);

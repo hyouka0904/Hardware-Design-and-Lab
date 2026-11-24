@@ -55,6 +55,7 @@ module practice_map_tb;
         keys = 10'h020;
         dut.player1_motion.state = 4'd8;
         dut.player1_motion.jump = 2'd1;
+        dut.Map4.player1_position.previous_jump = 2'd1;
         dut.Map4.player1_position.horizontal = 10'd97;
         dut.Map4.player1_position.vertical = 10'd31;
         dut.Map4.player1_position.horizontal_ticks = 25'd1500000;

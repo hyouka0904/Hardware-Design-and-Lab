@@ -18,8 +18,8 @@ module practice_map #(
     localparam [9:0] PLATFORM_LEFT = 10'd10, PLATFORM_RIGHT = 10'd116;
     localparam [9:0] RED_RIVER_LEFT = 10'd150, BLUE_RIVER_LEFT = 10'd210;
     localparam [9:0] BRIDGE_SWITCH_LEFT = 10'd193, BRIDGE_SWITCH_WIDTH = 10'd14;
-    localparam [9:0] SWITCH_Y = FLOOR_Y - 10'd4;
-    localparam [16:0] SWITCH_ACTIVE = 17'd213, SWITCH_INACTIVE = 17'd1628;
+    localparam [9:0] PAD_HEIGHT = 10'd4, PAD_Y = FLOOR_Y - PAD_HEIGHT;
+    localparam [16:0] MECHANISM_LIT = 17'd213, MECHANISM_UNLIT = 17'd1628;
     localparam [9:0] RED_PAD_LEFT = 10'd252, BLUE_PAD_LEFT = 10'd263;
     localparam [9:0] GATE_PAD_WIDTH = 10'd10, GATE_X = 10'd275;
     localparam [9:0] TIMER_LEFT = 10'd256, TIMER_Y = 10'd18;
@@ -37,16 +37,18 @@ module practice_map #(
 
     wire reset_position = rst || !en;
     wire gate_open;
+    wire p1_gate_blocked = gate_blocks(center_x1, player_state, gate_open);
+    wire p2_gate_blocked = gate_blocks(center_x2, player2_state, gate_open);
 
     player_position player1_position(
         .clk(clk), .reset_position(reset_position), .paused(paused),
-        .state(player_state), .jump(player_jump), .collision(p1_collision || gate_blocks(center_x1, player_state, gate_open)),
+        .state(player_state), .jump(player_jump), .collision(p1_gate_blocked),
         .horizontal(position_x1), .vertical(position_y1)
     );
 
     player_position #(.START_VERTICAL(FLOOR_Y - PLATFORM_Y)) player2_position(
         .clk(clk), .reset_position(reset_position), .paused(paused),
-        .state(player2_state), .jump(player2_jump), .collision(p2_collision || gate_blocks(center_x2, player2_state, gate_open)),
+        .state(player2_state), .jump(player2_jump), .collision(p2_gate_blocked),
         .horizontal(position_x2), .vertical(position_y2)
     );
 
@@ -67,21 +69,21 @@ module practice_map #(
         end
     endfunction
 
-    function [2:0] contacts;
+    function [2:0] terrain_contacts;
         input [9:0] x, feet;
         input [1:0] jump;
-        reg above_platform, supported, collision;
+        reg over_platform, supported, hit_ceiling;
         begin
-            above_platform = x >= PLATFORM_LEFT && x < PLATFORM_RIGHT;
-            supported = feet == FLOOR_Y || (above_platform && feet == PLATFORM_Y);
+            over_platform = x >= PLATFORM_LEFT && x < PLATFORM_RIGHT;
+            supported = feet == FLOOR_Y || (over_platform && feet == PLATFORM_Y);
             // Feet advance one pixel per step, so equality catches the top on descent.
-            collision = jump == RISING && feet <= CEILING_HEIGHT + PLAYER_HEIGHT;
-            contacts = {collision, jump == FALLING && supported, jump == GROUNDED && !supported};
+            hit_ceiling = jump == RISING && feet <= CEILING_HEIGHT + PLAYER_HEIGHT;
+            terrain_contacts = {hit_ceiling, jump == FALLING && supported, jump == GROUNDED && !supported};
         end
     endfunction
 
-    assign {p1_collision, p1_land, should_down} = contacts(center_x1, feet_y1, player_jump);
-    assign {p2_collision, p2_land, should_down2} = contacts(center_x2, feet_y2, player2_jump);
+    assign {p1_collision, p1_land, should_down} = terrain_contacts(center_x1, feet_y1, player_jump);
+    assign {p2_collision, p2_land, should_down2} = terrain_contacts(center_x2, feet_y2, player2_jump);
 
     wire p1_on_floor = feet_y1 == FLOOR_Y && player_jump != RISING;
     wire p2_on_floor = feet_y2 == FLOOR_Y && player2_jump != RISING;
@@ -118,8 +120,10 @@ module practice_map #(
                    in_span(center_x1, RED_EXIT_LEFT, EXIT_WIDTH) &&
                    in_span(center_x2, BLUE_EXIT_LEFT, EXIT_WIDTH);
 
+    // The VGA path samples existing atlas colors for all interactive terrain.
     wire [9:0] h = vga_h >> 1;
     wire [9:0] v = vga_v >> 1;
+    wire pad_row = in_span(v, PAD_Y, PAD_HEIGHT);
     wire timer_first = in_span(h, TIMER_LEFT, 10'd5);
     wire timer_second = in_span(h, TIMER_LEFT + 10'd7, 10'd5);
     wire timer_third = in_span(h, TIMER_LEFT + 10'd14, 10'd5);
@@ -142,7 +146,7 @@ module practice_map #(
         else if (v >= FLOOR_Y && v < FLOOR_Y + 10'd6 && in_span(h, RED_RIVER_LEFT, RIVER_WIDTH))
             addr = RED_COLOR;
         else if (v >= FLOOR_Y && v < FLOOR_Y + 10'd6 && in_span(h, BLUE_RIVER_LEFT, RIVER_WIDTH))
-            addr = bridge_active ? SWITCH_ACTIVE : BLUE_COLOR;
+            addr = bridge_active ? MECHANISM_LIT : BLUE_COLOR;
         else if (v >= FLOOR_Y)
             addr = atlas(h, v - 10'd10);
         else if (h < 10'd10)
@@ -150,21 +154,21 @@ module practice_map #(
         else if (h >= 10'd310)
             addr = atlas(h - 10'd5, v);
         else if (!gate_open && h == GATE_X)
-            addr = SWITCH_ACTIVE;
+            addr = MECHANISM_LIT;
         else if (in_span(v, TIMER_Y, 10'd3) && (timer_first || timer_second || timer_third))
-            addr = timer_lit ? SWITCH_ACTIVE : SWITCH_INACTIVE;
+            addr = timer_lit ? MECHANISM_LIT : MECHANISM_UNLIT;
         else if (in_span(v, feet_y1 - PLAYER_HEIGHT, PLAYER_HEIGHT) &&
                  in_span(h, position_x1 + 10'd13, 10'd15))
             addr = atlas(h - position_x1 + 10'd40, v + PLAYER_HEIGHT - feet_y1);
         else if (in_span(v, feet_y2 - PLAYER_HEIGHT, PLAYER_HEIGHT) &&
                  in_span(h, position_x2 + 10'd13, 10'd14))
             addr = atlas(h - position_x2 + 10'd148, v + 10'd89 - feet_y2);
-        else if (in_span(v, SWITCH_Y, 10'd4) && in_span(h, BRIDGE_SWITCH_LEFT, BRIDGE_SWITCH_WIDTH))
-            addr = bridge_active ? SWITCH_ACTIVE : SWITCH_INACTIVE;
-        else if (in_span(v, SWITCH_Y, 10'd4) && in_span(h, RED_PAD_LEFT, GATE_PAD_WIDTH))
-            addr = red_pad_pressed ? SWITCH_ACTIVE : RED_COLOR;
-        else if (in_span(v, SWITCH_Y, 10'd4) && in_span(h, BLUE_PAD_LEFT, GATE_PAD_WIDTH))
-            addr = blue_pad_pressed ? SWITCH_ACTIVE : BLUE_COLOR;
+        else if (pad_row && in_span(h, BRIDGE_SWITCH_LEFT, BRIDGE_SWITCH_WIDTH))
+            addr = bridge_active ? MECHANISM_LIT : MECHANISM_UNLIT;
+        else if (pad_row && in_span(h, RED_PAD_LEFT, GATE_PAD_WIDTH))
+            addr = red_pad_pressed ? MECHANISM_LIT : RED_COLOR;
+        else if (pad_row && in_span(h, BLUE_PAD_LEFT, GATE_PAD_WIDTH))
+            addr = blue_pad_pressed ? MECHANISM_LIT : BLUE_COLOR;
         else if (in_span(v, 10'd201, 10'd29) && in_span(h, RED_EXIT_LEFT, EXIT_WIDTH))
             addr = atlas(h - RED_EXIT_LEFT, v - 10'd112);
         else if (in_span(v, 10'd201, 10'd29) && in_span(h, BLUE_EXIT_LEFT, EXIT_WIDTH))
