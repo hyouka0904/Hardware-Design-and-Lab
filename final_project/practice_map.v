@@ -9,8 +9,7 @@ module practice_map(
     output wire p1_land, p2_land,
     output wire should_down, should_down2
 );
-    localparam [9:0] FLOOR_Y = 10'd230, PLATFORM_Y = 10'd190;
-    localparam [3:0] LEFT = 4'd8;
+    localparam [9:0] FLOOR_Y = 10'd230, PLATFORM_Y = 10'd198;
     localparam [1:0] GROUNDED = 2'd0, RISING = 2'd1, FALLING = 2'd2;
     localparam [9:0] CEILING_HEIGHT = 10'd10, PLATFORM_HEIGHT = 10'd8;
     localparam [9:0] PLATFORM_LEFT = 10'd10, PLATFORM_RIGHT = 10'd116;
@@ -18,8 +17,6 @@ module practice_map(
     localparam [9:0] RED_EXIT_LEFT = 10'd250, BLUE_EXIT_LEFT = 10'd280;
     localparam [9:0] RIVER_WIDTH = 10'd40, EXIT_WIDTH = 10'd23;
     localparam [9:0] PLAYER_HEIGHT = 10'd30, PLAYER_CENTER = 10'd19;
-
-    localparam [9:0] PLATFORM_HEAD_LIMIT = PLATFORM_Y + PLATFORM_HEIGHT + PLAYER_HEIGHT;
 
     wire [9:0] position_x1, position_y1, position_x2, position_y2;
     wire [9:0] center_x1 = position_x1 + PLAYER_CENTER;
@@ -29,13 +26,13 @@ module practice_map(
 
     player_position player1_position(
         .clk(clk), .reset_position(rst || !en), .paused(paused),
-        .state(player_state), .jump(player_jump), .collision(p1_collision || hit_platform_side(center_x1, feet_y1, player_state)),
+        .state(player_state), .jump(player_jump), .collision(p1_collision),
         .horizontal(position_x1), .vertical(position_y1)
     );
 
     player_position #(.START_VERTICAL(FLOOR_Y - PLATFORM_Y)) player2_position(
         .clk(clk), .reset_position(rst || !en), .paused(paused),
-        .state(player2_state), .jump(player2_jump), .collision(p2_collision || hit_platform_side(center_x2, feet_y2, player2_state)),
+        .state(player2_state), .jump(player2_jump), .collision(p2_collision),
         .horizontal(position_x2), .vertical(position_y2)
     );
 
@@ -53,18 +50,9 @@ module practice_map(
         begin
             above_platform = x >= PLATFORM_LEFT && x < PLATFORM_RIGHT;
             supported = feet == FLOOR_Y || (above_platform && feet == PLATFORM_Y);
-            collision = jump == RISING && (feet <= CEILING_HEIGHT + PLAYER_HEIGHT ||
-                        (above_platform && feet == PLATFORM_HEAD_LIMIT));
+            // Feet advance one pixel per step, so equality catches the top on descent.
+            collision = jump == RISING && feet <= CEILING_HEIGHT + PLAYER_HEIGHT;
             contacts = {collision, jump == FALLING && supported, jump == GROUNDED && !supported};
-        end
-    endfunction
-
-    function hit_platform_side;
-        input [9:0] x, feet;
-        input [3:0] state;
-        begin
-            hit_platform_side = state == LEFT && x == PLATFORM_RIGHT &&
-                                feet > PLATFORM_Y && feet < PLATFORM_HEAD_LIMIT;
         end
     endfunction
 

@@ -35,7 +35,7 @@ module practice_map_tb;
             $fatal(1, "Fourth menu entry should be reachable and highlighted");
 
         tap(10'h100);
-        if (selection !== 1 || dut.Map4.feet_y1 !== 10'd230 || dut.Map4.feet_y2 !== 10'd190)
+        if (selection !== 1 || dut.Map4.feet_y1 !== 10'd230 || dut.Map4.feet_y2 !== 10'd198)
             $fatal(1, "Practice map did not start on the original floor and platform");
         h = 10'd320;
         v = 10'd460;
@@ -50,15 +50,29 @@ module practice_map_tb;
             $fatal(1, "Blanking should use a valid background ROM address");
 
         @(negedge clk);
-        keys = 10'h030;
+        keys = 10'h020;
         dut.player1_motion.state = 4'd8;
         dut.player1_motion.jump = 2'd1;
         dut.Map4.player1_position.horizontal = 10'd97;
-        dut.Map4.player1_position.vertical = 10'd10;
+        dut.Map4.player1_position.vertical = 10'd31;
         dut.Map4.player1_position.horizontal_ticks = 25'd1500000;
+        dut.Map4.player1_position.vertical_ticks = 25'd2000000;
         @(negedge clk);
-        if (dut.Map4.position_x1 !== 10'd97 || dut.player_jump !== 2'd1)
-            $fatal(1, "A platform side should stop horizontal motion without ending ascent");
+        if (dut.Map4.position_x1 !== 10'd96 || dut.Map4.feet_y1 !== 10'd198 ||
+            dut.player_jump !== 2'd1 || dut.Map4.p1_land)
+            $fatal(1, "The one-way platform must allow ascent and side entry");
+        dut.Map4.player1_position.vertical_ticks = 25'd2000000;
+        @(negedge clk);
+        if (dut.Map4.feet_y1 !== 10'd197)
+            $fatal(1, "The player should rise above the platform");
+        dut.player1_motion.jump = 2'd2;
+        dut.Map4.player1_position.vertical_ticks = 25'd2000000;
+        @(negedge clk);
+        if (!dut.Map4.p1_land || dut.Map4.feet_y1 !== 10'd198)
+            $fatal(1, "Descending feet should detect the platform surface");
+        @(negedge clk);
+        if (dut.player_jump !== 2'd0 || dut.Map4.feet_y1 !== 10'd198)
+            $fatal(1, "The player should stop on the platform");
 
         tap(10'h100);
         tap(10'h100);
@@ -89,9 +103,9 @@ module practice_map_tb;
 
         tap(10'h100);
         if (selection !== 0 || {cleared, failed} !== 0 ||
-            dut.Map4.feet_y2 !== 10'd190)
+            dut.Map4.feet_y2 !== 10'd198)
             $fatal(1, "Returning to menu should reset the practice map");
-        $display("PASS: fourth map selection, terrain, colored rivers, exits, and round reset");
+        $display("PASS: fourth map selection, one-way platform, colored rivers, exits, and round reset");
         $finish;
     end
 endmodule
