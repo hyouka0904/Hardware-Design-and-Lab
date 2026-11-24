@@ -9,7 +9,7 @@
 | [`lab/lab0/`](lab/lab0/) 至 [`lab/lab8/`](lab/lab8/) | 各次實驗的 RTL，以及對應的測試或腳位約束 |
 | [`demo/demo1/`](demo/demo1/)、[`demo/demo2/`](demo/demo2/) | VGA 顯示範例 |
 | [`final_project/`](final_project/) | Escape from NTHU 的 RTL、FPGA 約束、圖像 ROM 與模擬測試 |
-| [`final_project_ver2/`](final_project_ver2/) | 另一版期末專題原始碼 |
+| [`final_project_ver2/`](final_project_ver2/) | 期末專題原型，原型地圖已整合至正式專案 |
 | [`common/`](common/)、[`examples/`](examples/)、[`experiments/`](experiments/) | 共用模組與約束、教學範例、實驗程式 |
 | [`ip_lab/lab5/`](ip_lab/lab5/)、[`ip_lab5_test/`](ip_lab5_test/)、[`ip_lab/lab6/`](ip_lab/lab6/) | 鍵盤控制器 IP |
 | [`Pictrans/`](Pictrans/)、[`archives/`](archives/) | 圖像素材與轉換工具、原始專題封存 |
@@ -18,7 +18,7 @@
 
 ## Final Project · Escape from NTHU
 
-雙人共用一個鍵盤，在三張地圖中跳躍、避開障礙並抵達終點。畫面透過 VGA 輸出，板上的七段顯示器顯示計時，專案也提供數位音訊訊號。
+雙人共用一個鍵盤，在三張正式地圖和一張練習地圖中跳躍、避開障礙並抵達終點。畫面透過 VGA 輸出，板上的七段顯示器顯示計時，專案也提供數位音訊訊號。
 
 | 場景 | 按鍵 | 功能 |
 | --- | --- | --- |
@@ -28,6 +28,8 @@
 | 遊戲 | ←、→、↑ | 玩家 1 向左、向右、跳躍 |
 | 遊戲 | A、D、W | 玩家 2 向左、向右、跳躍 |
 | 遊戲或結果畫面 | Enter | 返回選單 |
+
+第四張是第二版原型的練習地圖。玩家 2 從平台出發，兩名玩家可踩過同色河流，並各自抵達右側同色出口。
 
 ### 在 Vivado 建置
 
@@ -47,7 +49,7 @@ vivado -mode batch -source final_project/create_project.tcl -tclargs build/final
 New-Item -ItemType Directory -Force build | Out-Null
 $rtl = Get-ChildItem final_project -Filter *.v | ForEach-Object FullName
 
-foreach ($test in 'position_tb', 'motion_tb', 'round_tb') {
+foreach ($test in 'position_tb', 'motion_tb', 'round_tb', 'practice_map_tb') {
     $output = "build/$test.vvp"
     iverilog -g2012 -s $test -o $output @rtl "final_project/tests/$test.sv"
     if ($LASTEXITCODE -ne 0) { throw "Compile failed: $test" }
@@ -60,4 +62,6 @@ foreach ($test in 'position_tb', 'motion_tb', 'round_tb') {
 - `motion_tb` 檢查方向鍵、跳躍、掉落與重開回合時的玩家狀態。
 - `round_tb` 檢查勝負鎖定、地圖暫停、結果畫面與回到選單時的重設。
 
-這三項測試可獨立執行，無需 Vivado 產生的 ROM IP。
+- `practice_map_tb` 檢查第四張地圖的選單入口、地形、雙色河流、過關和重設。
+
+這四項測試可獨立執行，無需 Vivado 產生的 ROM IP。

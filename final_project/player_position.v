@@ -1,4 +1,6 @@
-module player_position(
+module player_position #(
+    parameter [9:0] START_VERTICAL = 10'd0
+)(
     input clk,
     input reset_position,
     input paused,
@@ -6,7 +8,7 @@ module player_position(
     input [1:0] jump,
     input collision,
     output reg [9:0] horizontal = 10'd0,
-    output reg [9:0] vertical = 10'd0
+    output reg [9:0] vertical = START_VERTICAL
 );
     localparam [3:0] IDLE = 4'd6, RIGHT = 4'd7, LEFT = 4'd8, UP = 4'd9;
     localparam [1:0] GROUNDED = 2'd0, RISING = 2'd1, FALLING = 2'd2;
@@ -40,7 +42,7 @@ module player_position(
 
     always @(posedge clk) begin
         if (reset_position) begin
-            vertical <= 10'd0;
+            vertical <= START_VERTICAL;
             vertical_ticks <= 25'd0;
         end else if (!paused && (state == UP || state == LEFT || state == RIGHT)) begin
             if (jump == GROUNDED) begin

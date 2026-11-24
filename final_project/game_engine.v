@@ -33,13 +33,18 @@ module map_switch(
     wire map3_p1_land, map3_p2_land;
     wire map3_should_down, map3_should_down2;
 
+    wire map4_p1_collision, map4_p2_collision;
+    wire map4_p1_land, map4_p2_land;
+    wire map4_should_down, map4_should_down2;
+    wire map4_clear, map4_fail;
+
     //wires of maps
     //using selector to choose the final output
     reg p1_collision, p2_collision;
     reg p1_land, p2_land;
     reg should_down, should_down2;
 
-    wire [16:0] map1_addr, map2_addr, map3_addr;
+    wire [16:0] map1_addr, map2_addr, map3_addr, map4_addr;
     wire map1_clear, map2_clear, map3_clear;
     wire map1_fail, map2_fail, map3_fail;
     localparam [1:0] IN_PROGRESS = 2'd0, CLEARED = 2'd1, FAILED = 2'd2;
@@ -95,7 +100,7 @@ module map_switch(
                 end
             end else if (en_key) begin
                 if (key_down[0] || key_down[4]) begin
-                    if (map < 3'd3)
+                    if (map < 3'd4)
                         map <= map + 1'b1;
                     en_key <= 1'b0;
                 end else if (key_down[2] || key_down[6]) begin
@@ -149,7 +154,7 @@ module map_switch(
         .h(h), .v(v), .select(select), .map(map),
         .map1_addr(map1_addr),
         .map2_addr(map2_addr),
-        .map3_addr(map3_addr),
+        .map3_addr(map3_addr), .map4_addr(map4_addr),
         .map_and_menu_addr(map_and_menu_addr)
     );
 
@@ -162,7 +167,7 @@ module map_switch(
         else pixel_addr = map_and_menu_addr;
     end
 
-    // The menu exposes three playable maps.
+    // Original campaign maps.
     map1 Map1(
         .clk(clk),
         .rst(rst),
@@ -232,6 +237,28 @@ module map_switch(
         .invincible(invincible)
     );
 
+    practice_map Map4(
+        .clk(clk),
+        .rst(rst),
+        .en((map == 4) && select),
+        .paused(finished),
+        .addr(map4_addr),
+        .vga_h(vga_h),
+        .vga_v(vga_v),
+        .player_state(player_state),
+        .player2_state(player2_state),
+        .player_jump(player_jump),
+        .player2_jump(player2_jump),
+        .p1_collision(map4_p1_collision),
+        .p2_collision(map4_p2_collision),
+        .p1_land(map4_p1_land),
+        .p2_land(map4_p2_land),
+        .should_down(map4_should_down),
+        .should_down2(map4_should_down2),
+        .clear(map4_clear), .fail(map4_fail),
+        .invincible(invincible)
+    );
+
     always @* begin
         {selected_clear, selected_fail, p1_collision, p2_collision, p1_land, p2_land, should_down, should_down2}
             = 8'b0;
@@ -246,6 +273,9 @@ module map_switch(
                 3'd3: {selected_clear, selected_fail, p1_collision, p2_collision, p1_land, p2_land, should_down, should_down2}
                     = {map3_clear, map3_fail, map3_p1_collision, map3_p2_collision, map3_p1_land,
                        map3_p2_land, map3_should_down, map3_should_down2};
+                3'd4: {selected_clear, selected_fail, p1_collision, p2_collision, p1_land, p2_land, should_down, should_down2}
+                    = {map4_clear, map4_fail, map4_p1_collision, map4_p2_collision, map4_p1_land,
+                       map4_p2_land, map4_should_down, map4_should_down2};
                 default: ;
             endcase
         end
