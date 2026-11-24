@@ -6,7 +6,7 @@ module map_switch(
     input wire [9:0] vga_h, //640
     input wire [9:0] vga_v,  //480
     output reg [16:0] pixel_addr,
-    output reg [15:0] led,
+    output wire [15:0] led,
     output reg [2:0] select,
     output wire flag_alphabet,
     output wire game_clear, game_fail
@@ -19,19 +19,16 @@ module map_switch(
     wire [1:0] player_jump, player2_jump;
 
     //map1 wires
-    wire [15:0] map1_led;
     wire map1_p1_collision, map1_p2_collision;
     wire map1_p1_land, map1_p2_land;
     wire map1_should_down, map1_should_down2;
 
     //map2 wires
-    wire [15:0] map2_led;
     wire map2_p1_collision, map2_p2_collision;
     wire map2_p1_land, map2_p2_land;
     wire map2_should_down, map2_should_down2;
 
     //map3 wires
-    wire [15:0] map3_led;
     wire map3_p1_collision, map3_p2_collision;
     wire map3_p1_land, map3_p2_land;
     wire map3_should_down, map3_should_down2;
@@ -45,10 +42,14 @@ module map_switch(
     wire [16:0] map1_addr, map2_addr, map3_addr;
     wire map1_clear, map2_clear, map3_clear;
     wire map1_fail, map2_fail, map3_fail;
-    assign game_clear = select != 0 && ((map == 1 && map1_clear) ||
-        (map == 2 && map2_clear) || (map == 3 && map3_clear));
-    assign game_fail = select != 0 && ((map == 1 && map1_fail) ||
-        (map == 2 && map2_fail) || (map == 3 && map3_fail));
+    localparam [1:0] IN_PROGRESS = 2'd0, CLEARED = 2'd1, FAILED = 2'd2;
+    reg [1:0] result;
+    reg selected_clear, selected_fail;
+
+    assign game_clear = result == CLEARED;
+    assign game_fail = result == FAILED;
+    assign led = game_clear ? 16'hffff : (game_fail ? 16'hf0f0 : 16'h000f);
+    wire finished = result != IN_PROGRESS || selected_clear || selected_fail;
 
     //game end related variables
     wire [15:0] game_clear_scene_addr, game_fail_scene_addr;
@@ -112,16 +113,30 @@ module map_switch(
         end
     end
 
+    // Keep the first result until reset or the player returns to the menu.
+    always @(posedge clk or posedge rst) begin
+        if (rst)
+            result <= IN_PROGRESS;
+        else if (select == 0 || enter_pressed)
+            result <= IN_PROGRESS;
+        else if (result == IN_PROGRESS) begin
+            if (selected_clear)
+                result <= CLEARED;
+            else if (selected_fail)
+                result <= FAILED;
+        end
+    end
+
     player_motion player1_motion(
         .clk(clk), .rst(rst), .active(select != 0),
-        .finished(game_clear || game_fail), .keys(key_down[7:4]),
+        .finished(finished), .keys(key_down[7:4]),
         .collision(p1_collision), .landed(p1_land), .should_drop(should_down),
         .state(player_state), .jump(player_jump)
     );
 
     player_motion player2_motion(
         .clk(clk), .rst(rst), .active(select != 0),
-        .finished(game_clear || game_fail), .keys(key_down[3:0]),
+        .finished(finished), .keys(key_down[3:0]),
         .collision(p2_collision), .landed(p2_land), .should_drop(should_down2),
         .state(player2_state), .jump(player2_jump)
     );
@@ -152,6 +167,7 @@ module map_switch(
         .clk(clk),
         .rst(rst),
         .en((map == 1) && select),
+        .paused(finished),
         .addr(map1_addr),
         .vga_h(vga_h),
         .vga_v(vga_v),
@@ -159,7 +175,6 @@ module map_switch(
         .player2_state(player2_state),
         .player_jump(player_jump),
         .player2_jump(player2_jump),
-        .led(map1_led),
         .p1_collision(map1_p1_collision),
         .p2_collision(map1_p2_collision),
         .p1_land(map1_p1_land),
@@ -175,6 +190,7 @@ module map_switch(
         .clk(clk),
         .rst(rst),
         .en((map == 2) && select),
+        .paused(finished),
         .addr(map2_addr),
         .vga_h(vga_h),
         .vga_v(vga_v),
@@ -182,7 +198,6 @@ module map_switch(
         .player2_state(player2_state),
         .player_jump(player_jump),
         .player2_jump(player2_jump),
-        .led(map2_led),
         .p1_collision(map2_p1_collision),
         .p2_collision(map2_p2_collision),
         .p1_land(map2_p1_land),
@@ -198,6 +213,7 @@ module map_switch(
         .clk(clk),
         .rst(rst),
         .en((map == 3) && select),
+        .paused(finished),
         .addr(map3_addr),
         .vga_h(vga_h),
         .vga_v(vga_v),
@@ -205,7 +221,6 @@ module map_switch(
         .player2_state(player2_state),
         .player_jump(player_jump),
         .player2_jump(player2_jump),
-        .led(map3_led),
         .p1_collision(map3_p1_collision),
         .p2_collision(map3_p2_collision),
         .p1_land(map3_p1_land),
@@ -218,18 +233,18 @@ module map_switch(
     );
 
     always @* begin
-        {led, p1_collision, p2_collision, p1_land, p2_land, should_down, should_down2}
-            = {16'h000f, 6'b0};
+        {selected_clear, selected_fail, p1_collision, p2_collision, p1_land, p2_land, should_down, should_down2}
+            = 8'b0;
         if (select != 0) begin
             case (map)
-                3'd1: {led, p1_collision, p2_collision, p1_land, p2_land, should_down, should_down2}
-                    = {map1_led, map1_p1_collision, map1_p2_collision, map1_p1_land,
+                3'd1: {selected_clear, selected_fail, p1_collision, p2_collision, p1_land, p2_land, should_down, should_down2}
+                    = {map1_clear, map1_fail, map1_p1_collision, map1_p2_collision, map1_p1_land,
                        map1_p2_land, map1_should_down, map1_should_down2};
-                3'd2: {led, p1_collision, p2_collision, p1_land, p2_land, should_down, should_down2}
-                    = {map2_led, map2_p1_collision, map2_p2_collision, map2_p1_land,
+                3'd2: {selected_clear, selected_fail, p1_collision, p2_collision, p1_land, p2_land, should_down, should_down2}
+                    = {map2_clear, map2_fail, map2_p1_collision, map2_p2_collision, map2_p1_land,
                        map2_p2_land, map2_should_down, map2_should_down2};
-                3'd3: {led, p1_collision, p2_collision, p1_land, p2_land, should_down, should_down2}
-                    = {map3_led, map3_p1_collision, map3_p2_collision, map3_p1_land,
+                3'd3: {selected_clear, selected_fail, p1_collision, p2_collision, p1_land, p2_land, should_down, should_down2}
+                    = {map3_clear, map3_fail, map3_p1_collision, map3_p2_collision, map3_p1_land,
                        map3_p2_land, map3_should_down, map3_should_down2};
                 default: ;
             endcase

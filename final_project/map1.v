@@ -1,7 +1,8 @@
 module map1(
     input clk, 
     input rst, 
-    input en, 
+    input en,
+    input paused,
     input invincible,
     input wire [9:0] vga_h, 
     input wire [9:0] vga_v,  
@@ -10,7 +11,6 @@ module map1(
     output wire [16:0] addr, 
     output wire clear,
     output wire fail,
-    output reg [15:0] led,
     output wire p1_collision, p2_collision,
     output wire p1_land, p2_land,
     output wire should_down, should_down2,
@@ -29,7 +29,7 @@ module map1(
 
     wire dimond1_touch, button2_tounch, dimond2_touch;
     wire p1_on_mech1;
-    reg dimond1_flag = 1, botton1_flag = 1, botton2_flag = 1, dimond2_flag = 1, fail_flag = 1;
+    reg dimond1_flag = 1, botton1_flag = 1, botton2_flag = 1, dimond2_flag = 1;
     reg [9:0] player_horizontal_displacement = 0, player_vertical_displacement = 0, player2_h_dis = 0, player2_v_dis = 0;
     reg [24:0] player_cnt_horizontal = 25'b0, player_cnt_vertical = 25'b0, player2_cnt_h = 25'b0, player2_cnt_v = 25'b0;
     reg [9:0] mech_1_v_displacement = 0, mech_2_h_displacement = 0;
@@ -37,14 +37,6 @@ module map1(
 
     assign clear = (player_state == stactic && (13+player_horizontal_displacement)>=250 && (28+player_horizontal_displacement) <273 && (230-player_vertical_displacement) == 48) &&
     (player2_state == stactic && (13+player2_h_dis)>=280 && (27+player2_h_dis) <301 && (230-player2_v_dis) == 48);
-
-    always @(posedge clk) begin
-        if(rst || !en) led <= 16'b0000_0000_0000_1111;
-        else begin
-            if(clear) led <= 16'b1111_1111_1111_1111;
-            else if(fail) led <= 16'b1111_0000_1111_0000;
-        end
-    end
 
     assign p1_on_mech1 = ((25+player_horizontal_displacement) < 50 && (230-player_vertical_displacement)==(139+mech_1_v_displacement));
 
@@ -60,15 +52,9 @@ module map1(
         1
     );*/
 
-    assign fail = (invincible) ? (
-        0
-    ) : (
-        (fail_flag) ? (
+    assign fail = !invincible && (
             (player_horizontal_displacement >= 28 && player_horizontal_displacement <=49 && (230-player_vertical_displacement)==182) ||
             (player2_h_dis >= 28 && player2_h_dis <= 49 && (230-player2_v_dis) == 182)
-        ) : (
-            1
-        )
     );
 
 
@@ -477,17 +463,8 @@ module map1(
 
     always @(posedge clk) begin
         if(rst || !en) begin
-            fail_flag <= 1;
-        end else begin
-            if(fail_flag && fail) fail_flag <= 0;
-            else fail_flag <= fail_flag;
-        end
-    end
-
-    always @(posedge clk) begin
-        if(rst || !en) begin
             dimond1_flag <= 1;
-        end else begin
+        end else if (!paused) begin
             if(dimond1_flag && dimond1_touch) dimond1_flag <= 0;
             else dimond1_flag <= dimond1_flag;
         end
@@ -496,7 +473,7 @@ module map1(
     always @(posedge clk) begin
         if(rst || !en) begin
             dimond2_flag <= 1;
-        end else begin
+        end else if (!paused) begin
             if(dimond2_flag && dimond2_touch) dimond2_flag <= 0;
             else dimond2_flag <= dimond2_flag;
         end
@@ -505,7 +482,7 @@ module map1(
     always @(posedge clk) begin
         if(rst || !en) begin
             botton1_flag <= 1;
-        end else begin
+        end else if (!paused) begin
             if(botton1_flag && button1_tounch) botton1_flag <= 0;
             else botton1_flag <= botton1_flag;
         end
@@ -514,7 +491,7 @@ module map1(
     always @(posedge clk) begin
         if(rst || !en) begin
             botton2_flag <= 1;
-        end else begin
+        end else if (!paused) begin
             if(botton2_flag && button2_tounch) botton2_flag <= 0;
             else botton2_flag <= botton2_flag;
         end
@@ -524,7 +501,7 @@ module map1(
         if(rst || !en) begin
             mech_1_v_displacement <= 0;
             mech_cnt_v <= 0;
-        end else begin
+        end else if (!paused) begin
             if(button1_tounch) begin
                 if(mech_cnt_v < 25'd2000000) begin
                     mech_cnt_v <= mech_cnt_v + 1;
@@ -546,7 +523,7 @@ module map1(
         if(rst || !en) begin
             mech_2_h_displacement <= 0;
             mech_2_cnt_h <= 0;
-        end else begin
+        end else if (!paused) begin
             if(button2_tounch) begin
                 if(mech_2_cnt_h < 25'd2000000) begin
                     mech_2_cnt_h <= mech_2_cnt_h + 1;
@@ -570,7 +547,7 @@ module map1(
             player_vertical_displacement <= 0;
             player_cnt_horizontal <= 25'b0;
             player_cnt_vertical <= 25'b0;
-        end else begin
+        end else if (!paused) begin
             if(player_state == stactic) begin
                 player_vertical_displacement <= player_vertical_displacement;
                 player_horizontal_displacement <= player_horizontal_displacement;
@@ -695,7 +672,7 @@ module map1(
             player2_v_dis <= 0;
             player2_cnt_h <= 0;
             player2_cnt_v <= 0;
-        end else begin
+        end else if (!paused) begin
             if(player2_state == 4'd6) begin
                 player2_h_dis <= player2_h_dis;
                 player2_v_dis <= player2_v_dis;
