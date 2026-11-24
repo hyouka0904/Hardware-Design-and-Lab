@@ -81,10 +81,19 @@ module practice_map_tb;
         @(negedge clk);
         if (failed !== 0)
             $fatal(1, "Red player should be safe in the red river");
+        dut.Map4.player2_position.horizontal = 10'd181;
+        dut.Map4.player2_position.vertical = 0;
+        dut.Map4.player2_position.vertical_ticks = 0;
+        dut.player2_motion.jump = 0;
         dut.Map4.player1_position.horizontal = 10'd201;
+        h = 10'd440;
+        v = 10'd460;
         @(negedge clk);
-        if (failed !== 1)
-            $fatal(1, "Red player should fail in the blue river");
+        if (failed || !dut.Map4.bridge_active || pixel !== 17'd213)
+            $fatal(1, "Holding the switch should render a bridge and protect the other player");
+        tap(10'h001);
+        if (!failed || dut.Map4.bridge_active)
+            $fatal(1, "Jumping off the switch should retract the bridge and expose the river");
 
         tap(10'h100);
         tap(10'h100);

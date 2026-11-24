@@ -14,6 +14,9 @@ module practice_map(
     localparam [9:0] CEILING_HEIGHT = 10'd10, PLATFORM_HEIGHT = 10'd8;
     localparam [9:0] PLATFORM_LEFT = 10'd10, PLATFORM_RIGHT = 10'd116;
     localparam [9:0] RED_RIVER_LEFT = 10'd150, BLUE_RIVER_LEFT = 10'd210;
+    localparam [9:0] BRIDGE_SWITCH_LEFT = 10'd193, BRIDGE_SWITCH_WIDTH = 10'd14;
+    localparam [9:0] SWITCH_Y = FLOOR_Y - 10'd4;
+    localparam [16:0] SWITCH_ACTIVE = 17'd213, SWITCH_INACTIVE = 17'd1628;
     localparam [9:0] RED_EXIT_LEFT = 10'd250, BLUE_EXIT_LEFT = 10'd280;
     localparam [9:0] RIVER_WIDTH = 10'd40, EXIT_WIDTH = 10'd23;
     localparam [9:0] PLAYER_HEIGHT = 10'd30, PLAYER_CENTER = 10'd19;
@@ -59,10 +62,16 @@ module practice_map(
     assign {p1_collision, p1_land, should_down} = contacts(center_x1, feet_y1, player_jump);
     assign {p2_collision, p2_land, should_down2} = contacts(center_x2, feet_y2, player2_jump);
 
+    wire p1_on_floor = feet_y1 == FLOOR_Y && player_jump != RISING;
+    wire p2_on_floor = feet_y2 == FLOOR_Y && player2_jump != RISING;
+    wire bridge_active =
+        (p1_on_floor && in_span(center_x1, BRIDGE_SWITCH_LEFT, BRIDGE_SWITCH_WIDTH)) ||
+        (p2_on_floor && in_span(center_x2, BRIDGE_SWITCH_LEFT, BRIDGE_SWITCH_WIDTH));
+
     // Players can cross the river that matches their color on foot.
     assign fail = !invincible &&
-        ((feet_y1 == FLOOR_Y && in_span(center_x1, BLUE_RIVER_LEFT, RIVER_WIDTH)) ||
-         (feet_y2 == FLOOR_Y && in_span(center_x2, RED_RIVER_LEFT, RIVER_WIDTH)));
+        ((!bridge_active && p1_on_floor && in_span(center_x1, BLUE_RIVER_LEFT, RIVER_WIDTH)) ||
+         (p2_on_floor && in_span(center_x2, RED_RIVER_LEFT, RIVER_WIDTH)));
     assign clear = feet_y1 == FLOOR_Y && feet_y2 == FLOOR_Y &&
                    player_jump == GROUNDED && player2_jump == GROUNDED &&
                    in_span(center_x1, RED_EXIT_LEFT, EXIT_WIDTH) &&
@@ -86,7 +95,7 @@ module practice_map(
         else if (v >= FLOOR_Y && v < FLOOR_Y + 10'd6 && in_span(h, RED_RIVER_LEFT, RIVER_WIDTH))
             addr = 17'd19521;
         else if (v >= FLOOR_Y && v < FLOOR_Y + 10'd6 && in_span(h, BLUE_RIVER_LEFT, RIVER_WIDTH))
-            addr = 17'd22470;
+            addr = bridge_active ? SWITCH_ACTIVE : 17'd22470;
         else if (v >= FLOOR_Y)
             addr = atlas(h, v - 10'd10);
         else if (h < 10'd10)
@@ -99,6 +108,8 @@ module practice_map(
         else if (in_span(v, feet_y2 - PLAYER_HEIGHT, PLAYER_HEIGHT) &&
                  in_span(h, position_x2 + 10'd13, 10'd14))
             addr = atlas(h - position_x2 + 10'd148, v + 10'd89 - feet_y2);
+        else if (in_span(v, SWITCH_Y, 10'd4) && in_span(h, BRIDGE_SWITCH_LEFT, BRIDGE_SWITCH_WIDTH))
+            addr = bridge_active ? SWITCH_ACTIVE : SWITCH_INACTIVE;
         else if (in_span(v, 10'd201, 10'd29) && in_span(h, RED_EXIT_LEFT, EXIT_WIDTH))
             addr = atlas(h - RED_EXIT_LEFT, v - 10'd112);
         else if (in_span(v, 10'd201, 10'd29) && in_span(h, BLUE_EXIT_LEFT, EXIT_WIDTH))
