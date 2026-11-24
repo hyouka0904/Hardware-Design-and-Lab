@@ -269,12 +269,10 @@ module player_motion(
     localparam [27:0] RISE_LIMIT = 28'd70000000, FALL_LIMIT = 28'd240000000;
 
     reg [27:0] jump_ticks;
-    wire move_left = (keys[1] || keys[0]) && !keys[3];
-    wire move_right = (keys[3] || keys[0]) && !keys[1];
-    wire jump_only = keys == 4'b0001;
-    wire moving_sideways = !jump_only && (move_left || move_right);
-    wire force_fall = moving_sideways && should_drop;
-    wire jump_requested = jump_only || (moving_sideways && keys[0]);
+    // Only one horizontal direction can be active. Down is reserved.
+    wire move_left = keys[1] && !keys[3];
+    wire move_right = keys[3] && !keys[1];
+    wire jump_requested = keys[0];
 
     always @(posedge clk or posedge rst) begin
         if (rst) begin
@@ -286,18 +284,18 @@ module player_motion(
             jump <= GROUNDED;
             jump_ticks <= 28'd0;
         end else if (!finished) begin
-            if (jump_only)
-                state <= UP;
-            else if (move_left)
+            if (move_left)
                 state <= LEFT;
             else if (move_right)
                 state <= RIGHT;
-            else if (keys == 4'b0 && jump == GROUNDED)
+            else if (jump_requested || jump != GROUNDED || should_drop)
+                state <= UP;
+            else
                 state <= IDLE;
 
-            if (jump == GROUNDED && !jump_requested && !force_fall) begin
+            if (jump == GROUNDED && !jump_requested && !should_drop) begin
                 jump_ticks <= 28'd0;
-            end else if (!force_fall && jump != FALLING &&
+            end else if (!should_drop && jump != FALLING &&
                          !collision && jump_ticks < RISE_LIMIT) begin
                 jump <= RISING;
                 jump_ticks <= jump_ticks + 1'b1;
