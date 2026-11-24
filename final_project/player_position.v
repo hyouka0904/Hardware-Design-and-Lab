@@ -22,7 +22,7 @@ module player_position(
             horizontal <= 10'd0;
             horizontal_ticks <= 25'd0;
         end else if (!paused) begin
-            if (state == IDLE) begin
+            if (state == IDLE || state == UP) begin
                 horizontal_ticks <= 25'd0;
             end else if (state == LEFT || state == RIGHT) begin
                 if (horizontal_ticks < HORIZONTAL_LIMIT) begin
