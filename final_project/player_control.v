@@ -1,20 +1,20 @@
-module player_control (
-	input clk, 
-	input rst, 
+module player_control #(
+    parameter LEN = 14656
+)(
+    input clk,
+    input rst,
     input en,
-	output reg [13:0] ibeat
+    input beat_tick,
+    output reg [13:0] ibeat
 );
-	parameter LEN = 14656;
+    localparam [13:0] LAST_BEAT = LEN - 1;
 
-	always @(posedge clk, posedge rst) begin
-		if (rst) begin
-			ibeat <= 0;
-        end else if(!en) ibeat <= 0;
-		else begin
-            if(ibeat == LEN-1) ibeat <= 0;
-            else ibeat <= ibeat + 1;
-		end
-	end
-    
-
+    always @(posedge clk or posedge rst) begin
+        if (rst)
+            ibeat <= 14'd0;
+        else if (!en)
+            ibeat <= 14'd0;
+        else if (beat_tick)
+            ibeat <= (ibeat == LAST_BEAT) ? 14'd0 : ibeat + 1'b1;
+    end
 endmodule

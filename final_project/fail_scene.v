@@ -12,12 +12,12 @@ module fail_scene(
         .en(en_l),
         .vga_h(vga_h), 
         .vga_v(vga_v), 
-        .mem_pivot_h(55), 
-        .mem_pivot_v(50),
-        .pivot_h(70),
-        .pivot_v(60),
-        .width(23),
-        .height(40)
+        .mem_pivot_h(10'd55),
+        .mem_pivot_v(10'd50),
+        .pivot_h(10'd70),
+        .pivot_v(10'd60),
+        .width(10'd23),
+        .height(10'd40)
     );
 
     abc  o(
@@ -25,12 +25,12 @@ module fail_scene(
         .en(en_o),
         .vga_h(vga_h), 
         .vga_v(vga_v), 
-        .mem_pivot_h(135), 
-        .mem_pivot_v(50),
-        .pivot_h(95),
-        .pivot_v(62),
-        .width(25),
-        .height(40)
+        .mem_pivot_h(10'd135),
+        .mem_pivot_v(10'd50),
+        .pivot_h(10'd95),
+        .pivot_v(10'd62),
+        .width(10'd25),
+        .height(10'd40)
     );
 
     abc  s(
@@ -38,12 +38,12 @@ module fail_scene(
         .en(en_s),
         .vga_h(vga_h), 
         .vga_v(vga_v), 
-        .mem_pivot_h(5), 
-        .mem_pivot_v(90),
-        .pivot_h(120),
-        .pivot_v(60),
-        .width(23),
-        .height(40)
+        .mem_pivot_h(10'd5),
+        .mem_pivot_v(10'd90),
+        .pivot_h(10'd120),
+        .pivot_v(10'd60),
+        .width(10'd23),
+        .height(10'd40)
     );
 
     abc  s2(
@@ -51,12 +51,12 @@ module fail_scene(
         .en(en_s2),
         .vga_h(vga_h), 
         .vga_v(vga_v), 
-        .mem_pivot_h(5), 
-        .mem_pivot_v(90),
-        .pivot_h(145),
-        .pivot_v(60),
-        .width(23),
-        .height(40)
+        .mem_pivot_h(10'd5),
+        .mem_pivot_v(10'd90),
+        .pivot_h(10'd145),
+        .pivot_v(10'd60),
+        .width(10'd23),
+        .height(10'd40)
     );
 
     always @* begin

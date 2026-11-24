@@ -12,12 +12,12 @@ module clear_scene(
         .en(en_s),
         .vga_h(vga_h), 
         .vga_v(vga_v), 
-        .mem_pivot_h(5), 
-        .mem_pivot_v(90),
-        .pivot_h(33),
-        .pivot_v(60),
-        .width(23),
-        .height(40)
+        .mem_pivot_h(10'd5),
+        .mem_pivot_v(10'd90),
+        .pivot_h(10'd33),
+        .pivot_v(10'd60),
+        .width(10'd23),
+        .height(10'd40)
     );
 
     abc  u(
@@ -25,12 +25,12 @@ module clear_scene(
         .en(en_u),
         .vga_h(vga_h), 
         .vga_v(vga_v), 
-        .mem_pivot_h(55), 
-        .mem_pivot_v(90),
-        .pivot_h(58),
-        .pivot_v(60),
-        .width(25),
-        .height(40)
+        .mem_pivot_h(10'd55),
+        .mem_pivot_v(10'd90),
+        .pivot_h(10'd58),
+        .pivot_v(10'd60),
+        .width(10'd25),
+        .height(10'd40)
     );
 
     abc  c(
@@ -38,12 +38,12 @@ module clear_scene(
         .en(en_c),
         .vga_h(vga_h), 
         .vga_v(vga_v), 
-        .mem_pivot_h(55), 
-        .mem_pivot_v(5),
-        .pivot_h(83),
-        .pivot_v(60),
-        .width(25),
-        .height(40)
+        .mem_pivot_h(10'd55),
+        .mem_pivot_v(10'd5),
+        .pivot_h(10'd83),
+        .pivot_v(10'd60),
+        .width(10'd25),
+        .height(10'd40)
     );
 
     abc  c2(
@@ -51,12 +51,12 @@ module clear_scene(
         .en(en_c2),
         .vga_h(vga_h), 
         .vga_v(vga_v), 
-        .mem_pivot_h(55), 
-        .mem_pivot_v(5),
-        .pivot_h(108),
-        .pivot_v(60),
-        .width(25),
-        .height(40)
+        .mem_pivot_h(10'd55),
+        .mem_pivot_v(10'd5),
+        .pivot_h(10'd108),
+        .pivot_v(10'd60),
+        .width(10'd25),
+        .height(10'd40)
     );
 
     abc  e(
@@ -64,12 +64,12 @@ module clear_scene(
         .en(en_e),
         .vga_h(vga_h), 
         .vga_v(vga_v), 
-        .mem_pivot_h(108), 
-        .mem_pivot_v(5),
-        .pivot_h(133),
-        .pivot_v(60),
-        .width(25),
-        .height(40)
+        .mem_pivot_h(10'd108),
+        .mem_pivot_v(10'd5),
+        .pivot_h(10'd133),
+        .pivot_v(10'd60),
+        .width(10'd25),
+        .height(10'd40)
     );
 
     abc  s2(
@@ -77,12 +77,12 @@ module clear_scene(
         .en(en_s2),
         .vga_h(vga_h), 
         .vga_v(vga_v), 
-        .mem_pivot_h(5), 
-        .mem_pivot_v(90),
-        .pivot_h(158),
-        .pivot_v(60),
-        .width(23),
-        .height(40)
+        .mem_pivot_h(10'd5),
+        .mem_pivot_v(10'd90),
+        .pivot_h(10'd158),
+        .pivot_v(10'd60),
+        .width(10'd23),
+        .height(10'd40)
     );
 
     abc  s3(
@@ -90,12 +90,12 @@ module clear_scene(
         .en(en_s3),
         .vga_h(vga_h), 
         .vga_v(vga_v), 
-        .mem_pivot_h(5), 
-        .mem_pivot_v(90),
-        .pivot_h(183),
-        .pivot_v(60),
-        .width(23),
-        .height(40)
+        .mem_pivot_h(10'd5),
+        .mem_pivot_v(10'd90),
+        .pivot_h(10'd183),
+        .pivot_v(10'd60),
+        .width(10'd23),
+        .height(10'd40)
     );
 
     always @* begin

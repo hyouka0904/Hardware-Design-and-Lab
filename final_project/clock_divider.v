@@ -1,15 +1,16 @@
-module clock_divider(clk1, clk, clk22);
-input clk;
-output clk1;
-output clk22;
-reg [21:0] num;
-wire [21:0] next_num;
+module clock_divider(
+    input clk,
+    input rst,
+    output pixel_tick
+);
+    reg [1:0] counter;
 
-always @(posedge clk) begin
-    num <= next_num;
-end
+    always @(posedge clk) begin
+        if (rst)
+            counter <= 2'd0;
+        else
+            counter <= counter + 1'b1;
+    end
 
-assign next_num = num + 1'b1;
-assign clk1 = num[1];
-assign clk22 = num[21];
+    assign pixel_tick = !rst && counter == 2'd3;
 endmodule
