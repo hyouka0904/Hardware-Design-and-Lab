@@ -43,6 +43,25 @@ module practice_map_tb;
         if (pixel !== 17'd19521)
             $fatal(1, "Selected map should render the red river");
 
+        h = 10'd799;
+        v = 10'd524;
+        #1;
+        if (pixel !== 17'd0)
+            $fatal(1, "Blanking should use a valid background ROM address");
+
+        @(negedge clk);
+        keys = 10'h030;
+        dut.player1_motion.state = 4'd8;
+        dut.player1_motion.jump = 2'd1;
+        dut.Map4.player1_position.horizontal = 10'd97;
+        dut.Map4.player1_position.vertical = 10'd10;
+        dut.Map4.player1_position.horizontal_ticks = 25'd1500000;
+        @(negedge clk);
+        if (dut.Map4.position_x1 !== 10'd97 || dut.player_jump !== 2'd1)
+            $fatal(1, "A platform side should stop horizontal motion without ending ascent");
+
+        tap(10'h100);
+        tap(10'h100);
         @(negedge clk);
         dut.Map4.player1_position.horizontal = 10'd141;
         @(negedge clk);
