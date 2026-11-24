@@ -37,8 +37,22 @@ module practice_map #(
 
     wire reset_position = rst || !en;
     wire gate_open;
-    wire p1_gate_blocked = gate_blocks(center_x1, player_state, gate_open);
-    wire p2_gate_blocked = gate_blocks(center_x2, player2_state, gate_open);
+    reg p1_gate_from_left, p2_gate_from_left;
+    wire p1_gate_blocked = gate_blocks(center_x1, player_state, gate_open, p1_gate_from_left);
+    wire p2_gate_blocked = gate_blocks(center_x2, player2_state, gate_open, p2_gate_from_left);
+
+    // A player caught on the threshold may retreat toward their entry side.
+    always @(posedge clk) begin
+        if (reset_position) begin
+            p1_gate_from_left <= 1'b1;
+            p2_gate_from_left <= 1'b1;
+        end else if (!paused) begin
+            if (center_x1 != GATE_X)
+                p1_gate_from_left <= center_x1 < GATE_X;
+            if (center_x2 != GATE_X)
+                p2_gate_from_left <= center_x2 < GATE_X;
+        end
+    end
 
     player_position player1_position(
         .clk(clk), .reset_position(reset_position), .paused(paused),
@@ -62,10 +76,13 @@ module practice_map #(
     function gate_blocks;
         input [9:0] x;
         input [3:0] state;
-        input open;
+        input open, from_left;
         begin
-            gate_blocks = !open && ((state == RIGHT && x == GATE_X - 10'd1) ||
-                                    (state == LEFT && x == GATE_X + 10'd1));
+            gate_blocks = !open &&
+                ((state == RIGHT && x == GATE_X - 10'd1) ||
+                 (state == LEFT && x == GATE_X + 10'd1) ||
+                 (x == GATE_X && ((from_left && state == RIGHT) ||
+                                  (!from_left && state == LEFT))));
         end
     endfunction
 
@@ -111,9 +128,10 @@ module practice_map #(
         end
     end
 
-    // Players can cross the river that matches their color on foot.
+    // The blue field spans the air above the river until the bridge switch is held.
+    wire red_in_blue_field = !bridge_active && in_span(center_x1, BLUE_RIVER_LEFT, RIVER_WIDTH);
     assign fail = !invincible &&
-        ((!bridge_active && p1_on_floor && in_span(center_x1, BLUE_RIVER_LEFT, RIVER_WIDTH)) ||
+        (red_in_blue_field ||
          (p2_on_floor && in_span(center_x2, RED_RIVER_LEFT, RIVER_WIDTH)));
     assign clear = feet_y1 == FLOOR_Y && feet_y2 == FLOOR_Y &&
                    player_jump == GROUNDED && player2_jump == GROUNDED &&
@@ -153,6 +171,8 @@ module practice_map #(
             addr = atlas(h + 10'd305, v);
         else if (h >= 10'd310)
             addr = atlas(h - 10'd5, v);
+        else if (!bridge_active && (h == BLUE_RIVER_LEFT || h == BLUE_RIVER_LEFT + RIVER_WIDTH - 10'd1) && !v[1])
+            addr = BLUE_COLOR;
         else if (!gate_open && h == GATE_X)
             addr = MECHANISM_LIT;
         else if (in_span(v, TIMER_Y, 10'd3) && (timer_first || timer_second || timer_third))

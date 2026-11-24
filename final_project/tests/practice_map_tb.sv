@@ -100,6 +100,15 @@ module practice_map_tb;
 
         tap(10'h100);
         tap(10'h100);
+        dut.Map4.player1_position.horizontal = 10'd201;
+        dut.Map4.player1_position.vertical = 10'd25;
+        dut.player1_motion.jump = 2'd1;
+        @(negedge clk);
+        if (!failed)
+            $fatal(1, "The inactive bridge field must prevent an airborne shortcut");
+        tap(10'h100);
+        tap(10'h100);
+
         invincible = 1;
         dut.Map4.player2_position.horizontal = 10'd141;
         dut.Map4.player2_position.vertical = 0;
@@ -147,6 +156,21 @@ module practice_map_tb;
         @(negedge clk);
         if (dut.Map4.center_x2 !== 10'd275 || !dut.Map4.gate_open)
             $fatal(1, "The gate should remain open after leaving the pad");
+        repeat (12) @(negedge clk);
+        dut.Map4.player2_position.horizontal_ticks = 25'd1500000;
+        @(negedge clk);
+        if (dut.Map4.gate_open || dut.Map4.center_x2 !== 10'd275)
+            $fatal(1, "A player on the threshold cannot advance after the gate closes");
+        keys = 10'h002;
+        @(negedge clk);
+        dut.Map4.player2_position.horizontal_ticks = 25'd1500000;
+        @(negedge clk);
+        if (dut.Map4.center_x2 !== 10'd274)
+            $fatal(1, "A player on the threshold must be able to retreat");
+
+        keys = 0;
+        dut.Map4.player2_position.horizontal = 10'd247;
+        @(negedge clk);
         keys = 0;
         dut.Map4.player2_position.horizontal = 10'd266;
         @(negedge clk);
