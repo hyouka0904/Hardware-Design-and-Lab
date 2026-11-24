@@ -2,7 +2,7 @@ module map1(
     input clk, 
     input rst, 
     input en, 
-    input strong,
+    input invincible,
     input wire [9:0] vga_h, 
     input wire [9:0] vga_v,  
     input [3:0] player_state, player2_state,
@@ -60,7 +60,7 @@ module map1(
         1
     );*/
 
-    assign fail = (strong) ? (
+    assign fail = (invincible) ? (
         0
     ) : (
         (fail_flag) ? (

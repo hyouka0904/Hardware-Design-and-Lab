@@ -2,7 +2,7 @@ module map3(
     input clk, 
     input rst, 
     input en, 
-    input strong,
+    input invincible,
     input wire [9:0] vga_h, 
     input wire [9:0] vga_v,  
     input [3:0] player_state, player2_state,
@@ -60,7 +60,7 @@ module map3(
         1
     );
 
-    assign fail = strong ? 0 : (
+    assign fail = invincible ? 0 : (
         (fail_flag) ? (
             (player_horizontal_displacement >= 201 && player_horizontal_displacement <=208 && (230-player_vertical_displacement)==230) ||
             (player2_h_dis >= 140 && player2_h_dis <= 143 && (230-player2_v_dis) == 230) ||

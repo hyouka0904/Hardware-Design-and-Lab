@@ -1,35 +1,50 @@
 module music_ctrl(
-    output audio_mclk, // master clock
-    output audio_lrck, // left-right clock
-    output audio_sck,  // serial clock
-    output audio_sdin, // serial audio data input
-    input is_menu, 
-    input clk, 
-    input rst
+    input clk,
+    input rst,
+    input is_menu,
+    output audio_mclk,
+    output audio_lrck,
+    output audio_sck,
+    output audio_sdin
 );
+    wire beat_tick;
+    wire [13:0] menu_beat, game_beat;
+    wire [21:0] menu_left, menu_right, game_left, game_right;
+    wire [15:0] sample_left, sample_right;
+    reg previous_menu;
 
-    wire mclk1, mclk2, lrck1, lrck2, sck1, sck2, sdin1, sdin2;
-    assign audio_lrck = is_menu ? lrck2 : lrck1;
-    assign audio_mclk = is_menu ? mclk2 : mclk1;
-    assign audio_sck = is_menu ? sck2 : sck1;
-    assign audio_sdin = is_menu ? sdin2 : sdin1;
-    background_music Background_music2( //viyella
-        .clk(clk),
-        .rst(rst),
-        .en(is_menu),
-        .audio_mclk(mclk2),
-        .audio_lrck(lrck2),
-        .audio_sck(sck2),
-        .audio_sdin(sdin2)
-    );
-    menu_background_music Background_music1(//unwelcome school
-        .clk(clk),
-        .rst(rst),
-        .en(~is_menu),
-        .audio_mclk(mclk1),
-        .audio_lrck(lrck1),
-        .audio_sck(sck1),
-        .audio_sdin(sdin1)
+    always @(posedge clk or posedge rst) begin
+        if (rst)
+            previous_menu <= 1'b1;
+        else
+            previous_menu <= is_menu;
+    end
+
+    wire track_changed = previous_menu != is_menu;
+    bpm_controller #(.BPM(16 * 180)) tempo(
+        .clk(clk), .rst(rst), .restart(track_changed), .beat_tick(beat_tick)
     );
 
+    player_control #(.LEN(3840)) menu_position(
+        .clk(clk), .rst(rst), .en(is_menu), .beat_tick(beat_tick), .ibeat(menu_beat)
+    );
+    player_control #(.LEN(5760)) game_position(
+        .clk(clk), .rst(rst), .en(!is_menu), .beat_tick(beat_tick), .ibeat(game_beat)
+    );
+
+    music_viyella menu_song(.ibeatNum(menu_beat), .toneL(menu_left), .toneR(menu_right));
+    music_unwelcome_school game_song(.ibeatNum(game_beat), .toneL(game_left), .toneR(game_right));
+
+    note_gen notes(
+        .clk(clk), .rst(rst), .volume(3'd3),
+        .note_div_left(is_menu ? menu_left : game_left),
+        .note_div_right(is_menu ? menu_right : game_right),
+        .audio_left(sample_left), .audio_right(sample_right)
+    );
+
+    speaker_control speaker(
+        .clk(clk), .rst(rst), .audio_in_left(sample_left), .audio_in_right(sample_right),
+        .audio_mclk(audio_mclk), .audio_lrck(audio_lrck),
+        .audio_sck(audio_sck), .audio_sdin(audio_sdin)
+    );
 endmodule

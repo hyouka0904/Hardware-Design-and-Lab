@@ -34,7 +34,7 @@ module note_gen(
     
     // clk_cnt_next, b_clk_next
     always @*
-        if (clk_cnt == note_div_left)
+        if (clk_cnt >= note_div_left)
             begin
                 clk_cnt_next = 22'd0;
                 b_clk_next = ~b_clk;
@@ -47,7 +47,7 @@ module note_gen(
 
     // clk_cnt_next_2, c_clk_next
     always @*
-        if (clk_cnt_2 == note_div_right)
+        if (clk_cnt_2 >= note_div_right)
             begin
                 clk_cnt_next_2 = 22'd0;
                 c_clk_next = ~c_clk;

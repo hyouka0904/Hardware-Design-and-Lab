@@ -14,12 +14,12 @@ module game_cover(
         .en(en_u),
         .vga_h(vga_h), 
         .vga_v(vga_v), 
-        .mem_pivot_h(55), 
-        .mem_pivot_v(90),
-        .pivot_h(145),
-        .pivot_v(120),
-        .width(25),
-        .height(40)
+        .mem_pivot_h(10'd55),
+        .mem_pivot_v(10'd90),
+        .pivot_h(10'd145),
+        .pivot_v(10'd120),
+        .width(10'd25),
+        .height(10'd40)
     );
 
     abc  h(
@@ -27,12 +27,12 @@ module game_cover(
         .en(en_h),
         .vga_h(vga_h), 
         .vga_v(vga_v), 
-        .mem_pivot_h(185), 
-        .mem_pivot_v(7),
-        .pivot_h(120),
-        .pivot_v(120),
-        .width(25),
-        .height(40)
+        .mem_pivot_h(10'd185),
+        .mem_pivot_v(10'd7),
+        .pivot_h(10'd120),
+        .pivot_v(10'd120),
+        .width(10'd25),
+        .height(10'd40)
     );
 
     abc  t(
@@ -40,12 +40,12 @@ module game_cover(
         .en(en_t),
         .vga_h(vga_h), 
         .vga_v(vga_v), 
-        .mem_pivot_h(30), 
-        .mem_pivot_v(90),
-        .pivot_h(95),
-        .pivot_v(120),
-        .width(25),
-        .height(40)
+        .mem_pivot_h(10'd30),
+        .mem_pivot_v(10'd90),
+        .pivot_h(10'd95),
+        .pivot_v(10'd120),
+        .width(10'd25),
+        .height(10'd40)
     );
 
     abc  n(
@@ -53,12 +53,12 @@ module game_cover(
         .en(en_n),
         .vga_h(vga_h), 
         .vga_v(vga_v), 
-        .mem_pivot_h(108), 
-        .mem_pivot_v(50),
-        .pivot_h(70),
-        .pivot_v(120),
-        .width(25),
-        .height(40)
+        .mem_pivot_h(10'd108),
+        .mem_pivot_v(10'd50),
+        .pivot_h(10'd70),
+        .pivot_v(10'd120),
+        .width(10'd25),
+        .height(10'd40)
     );
 
     abc m (
@@ -66,12 +66,12 @@ module game_cover(
         .en(en_m),
         .vga_h(vga_h), 
         .vga_v(vga_v), 
-        .mem_pivot_h(78), 
-        .mem_pivot_v(50),
-        .pivot_h(145),
-        .pivot_v(63),
-        .width(30),
-        .height(40)
+        .mem_pivot_h(10'd78),
+        .mem_pivot_v(10'd50),
+        .pivot_h(10'd145),
+        .pivot_v(10'd63),
+        .width(10'd30),
+        .height(10'd40)
     );
 
     abc  o(
@@ -79,12 +79,12 @@ module game_cover(
         .en(en_o),
         .vga_h(vga_h), 
         .vga_v(vga_v), 
-        .mem_pivot_h(135), 
-        .mem_pivot_v(50),
-        .pivot_h(120),
-        .pivot_v(62),
-        .width(25),
-        .height(40)
+        .mem_pivot_h(10'd135),
+        .mem_pivot_v(10'd50),
+        .pivot_h(10'd120),
+        .pivot_v(10'd62),
+        .width(10'd25),
+        .height(10'd40)
     );
 
     abc  r(
@@ -92,12 +92,12 @@ module game_cover(
         .en(en_r),
         .vga_h(vga_h), 
         .vga_v(vga_v), 
-        .mem_pivot_h(210), 
-        .mem_pivot_v(50),
-        .pivot_h(95),
-        .pivot_v(62),
-        .width(25),
-        .height(40)
+        .mem_pivot_h(10'd210),
+        .mem_pivot_v(10'd50),
+        .pivot_h(10'd95),
+        .pivot_v(10'd62),
+        .width(10'd25),
+        .height(10'd40)
     );
 
     abc  f(
@@ -105,12 +105,12 @@ module game_cover(
         .en(en_f),
         .vga_h(vga_h), 
         .vga_v(vga_v), 
-        .mem_pivot_h(133), 
-        .mem_pivot_v(5),
-        .pivot_h(70),
-        .pivot_v(60),
-        .width(25),
-        .height(40)
+        .mem_pivot_h(10'd133),
+        .mem_pivot_v(10'd5),
+        .pivot_h(10'd70),
+        .pivot_v(10'd60),
+        .width(10'd25),
+        .height(10'd40)
     );
 
     abc  e2(
@@ -118,12 +118,12 @@ module game_cover(
         .en(en_e2),
         .vga_h(vga_h), 
         .vga_v(vga_v), 
-        .mem_pivot_h(108), 
-        .mem_pivot_v(5),
-        .pivot_h(170),
-        .pivot_v(5),
-        .width(25),
-        .height(40)
+        .mem_pivot_h(10'd108),
+        .mem_pivot_v(10'd5),
+        .pivot_h(10'd170),
+        .pivot_v(10'd5),
+        .width(10'd25),
+        .height(10'd40)
     );
 
     abc  p(
@@ -131,12 +131,12 @@ module game_cover(
         .en(en_p),
         .vga_h(vga_h), 
         .vga_v(vga_v), 
-        .mem_pivot_h(159), 
-        .mem_pivot_v(50),
-        .pivot_h(145),
-        .pivot_v(10),
-        .width(25),
-        .height(40)
+        .mem_pivot_h(10'd159),
+        .mem_pivot_v(10'd50),
+        .pivot_h(10'd145),
+        .pivot_v(10'd10),
+        .width(10'd25),
+        .height(10'd40)
     );
 
     abc  a(
@@ -144,12 +144,12 @@ module game_cover(
         .en(en_a),
         .vga_h(vga_h), 
         .vga_v(vga_v), 
-        .mem_pivot_h(5), 
-        .mem_pivot_v(5),
-        .pivot_h(120),
-        .pivot_v(5),
-        .width(25),
-        .height(40)
+        .mem_pivot_h(10'd5),
+        .mem_pivot_v(10'd5),
+        .pivot_h(10'd120),
+        .pivot_v(10'd5),
+        .width(10'd25),
+        .height(10'd40)
     );
 
     abc  c(
@@ -157,12 +157,12 @@ module game_cover(
         .en(en_c),
         .vga_h(vga_h), 
         .vga_v(vga_v), 
-        .mem_pivot_h(55), 
-        .mem_pivot_v(5),
-        .pivot_h(95),
-        .pivot_v(5),
-        .width(25),
-        .height(40)
+        .mem_pivot_h(10'd55),
+        .mem_pivot_v(10'd5),
+        .pivot_h(10'd95),
+        .pivot_v(10'd5),
+        .width(10'd25),
+        .height(10'd40)
     );
 
     abc  s(
@@ -170,12 +170,12 @@ module game_cover(
         .en(en_s),
         .vga_h(vga_h), 
         .vga_v(vga_v), 
-        .mem_pivot_h(5), 
-        .mem_pivot_v(90),
-        .pivot_h(70),
-        .pivot_v(8),
-        .width(23),
-        .height(40)
+        .mem_pivot_h(10'd5),
+        .mem_pivot_v(10'd90),
+        .pivot_h(10'd70),
+        .pivot_v(10'd8),
+        .width(10'd23),
+        .height(10'd40)
     );
 
     abc  e(
@@ -183,12 +183,12 @@ module game_cover(
         .en(en_e),
         .vga_h(vga_h), 
         .vga_v(vga_v), 
-        .mem_pivot_h(108), 
-        .mem_pivot_v(5),
-        .pivot_h(45),
-        .pivot_v(5),
-        .width(25),
-        .height(40)
+        .mem_pivot_h(10'd108),
+        .mem_pivot_v(10'd5),
+        .pivot_h(10'd45),
+        .pivot_v(10'd5),
+        .width(10'd25),
+        .height(10'd40)
     );
 
     /*
@@ -201,8 +201,8 @@ module game_cover(
         .mem_pivot_v(),
         .pivot_h(),
         .pivot_v(),
-        .width(25),
-        .height(40)
+        .width(10'd25),
+        .height(10'd40)
     );
     */
 
