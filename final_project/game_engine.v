@@ -244,7 +244,13 @@ module map_switch(
 
 endmodule
 
-module player_motion(
+module player_motion #(
+    parameter integer COYOTE_TICKS = 10_000_000,
+    parameter integer BUFFER_TICKS = 12_000_000,
+    parameter integer MIN_RISE_TICKS = 8_000_000,
+    parameter integer MAX_RISE_TICKS = 70_000_000,
+    parameter integer FALL_TIMEOUT_TICKS = 240_000_000
+)(
     input clk,
     input rst,
     input active,
@@ -258,45 +264,93 @@ module player_motion(
 );
     localparam [3:0] IDLE = 4'd6, RIGHT = 4'd7, LEFT = 4'd8, UP = 4'd9;
     localparam [1:0] GROUNDED = 2'd0, RISING = 2'd1, FALLING = 2'd2;
-    localparam [27:0] RISE_LIMIT = 28'd70000000, FALL_LIMIT = 28'd240000000;
+    localparam COYOTE_WIDTH = $clog2(COYOTE_TICKS + 2);
+    localparam BUFFER_WIDTH = $clog2(BUFFER_TICKS + 2);
+    localparam PHASE_WIDTH = $clog2(FALL_TIMEOUT_TICKS + MAX_RISE_TICKS + 2);
 
-    reg [27:0] jump_ticks;
-    // Only one horizontal direction can be active. Down is reserved.
+    reg [COYOTE_WIDTH-1:0] coyote_left;
+    reg [BUFFER_WIDTH-1:0] buffer_left;
+    reg [PHASE_WIDTH-1:0] phase_ticks;
+    reg jump_held, jump_released;
+
     wire move_left = keys[1] && !keys[3];
     wire move_right = keys[3] && !keys[1];
-    wire jump_requested = keys[0];
+    wire jump_pressed = keys[0] && !jump_held;
+    wire can_jump = jump == GROUNDED ||
+                    (jump == FALLING && (landed || coyote_left != 0));
+    wire takeoff = can_jump && (jump_pressed || buffer_left != 0);
+    wire end_ascent = collision || phase_ticks >= MAX_RISE_TICKS ||
+                      ((jump_released || !keys[0]) && phase_ticks >= MIN_RISE_TICKS);
 
     always @(posedge clk or posedge rst) begin
         if (rst) begin
             state <= IDLE;
             jump <= GROUNDED;
-            jump_ticks <= 28'd0;
+            jump_held <= 1'b0;
+            jump_released <= 1'b0;
+            coyote_left <= 0;
+            buffer_left <= 0;
+            phase_ticks <= 0;
         end else if (!active) begin
             state <= IDLE;
             jump <= GROUNDED;
-            jump_ticks <= 28'd0;
+            jump_held <= keys[0];
+            jump_released <= 1'b0;
+            coyote_left <= 0;
+            buffer_left <= 0;
+            phase_ticks <= 0;
         end else if (!finished) begin
+            jump_held <= keys[0];
             if (move_left)
                 state <= LEFT;
             else if (move_right)
                 state <= RIGHT;
-            else if (jump_requested || jump != GROUNDED || should_drop)
+            else if (takeoff || jump != GROUNDED || should_drop)
                 state <= UP;
             else
                 state <= IDLE;
 
-            if (jump == GROUNDED && !jump_requested && !should_drop) begin
-                jump_ticks <= 28'd0;
-            end else if (!should_drop && jump != FALLING &&
-                         !collision && jump_ticks < RISE_LIMIT) begin
+            if (takeoff)
+                buffer_left <= 0;
+            else if (jump_pressed)
+                buffer_left <= BUFFER_TICKS;
+            else if (buffer_left != 0)
+                buffer_left <= buffer_left - 1'b1;
+
+            if (takeoff)
+                coyote_left <= 0;
+            else if (jump == GROUNDED && should_drop)
+                coyote_left <= COYOTE_TICKS;
+            else if (coyote_left != 0)
+                coyote_left <= coyote_left - 1'b1;
+
+            if (takeoff) begin
                 jump <= RISING;
-                jump_ticks <= jump_ticks + 1'b1;
-            end else if (!landed && jump_ticks < FALL_LIMIT) begin
-                jump <= FALLING;
-                jump_ticks <= jump_ticks + 1'b1;
+                phase_ticks <= 0;
+                jump_released <= !keys[0];
             end else begin
-                jump <= GROUNDED;
-                jump_ticks <= 28'd0;
+                case (jump)
+                    GROUNDED: begin
+                        if (should_drop)
+                            jump <= FALLING;
+                    end
+                    RISING: begin
+                        if (!keys[0])
+                            jump_released <= 1'b1;
+                        if (end_ascent) begin
+                            jump <= FALLING;
+                            phase_ticks <= 0;
+                        end else
+                            phase_ticks <= phase_ticks + 1'b1;
+                    end
+                    FALLING: begin
+                        if (landed || phase_ticks >= FALL_TIMEOUT_TICKS) begin
+                            jump <= GROUNDED;
+                            phase_ticks <= 0;
+                        end else
+                            phase_ticks <= phase_ticks + 1'b1;
+                    end
+                endcase
             end
         end
     end
