@@ -12,39 +12,26 @@ module map_switch(
     output wire game_clear, game_fail
 );
 
-    //map
-    reg [2:0] map = 1;
-    reg en_key = 1;
+    localparam [2:0] MAP_COUNT = 3'd4;
+    localparam [1:0] IN_PROGRESS = 2'd0, CLEARED = 2'd1, FAILED = 2'd2;
+
+    reg [2:0] map = 3'd1;
+    reg en_key = 1'b1;
+    reg [1:0] result;
+
+    wire round_active = select != 0;
+    wire map_valid = map >= 3'd1 && map <= MAP_COUNT;
+    wire active_map = round_active && map_valid;
+    wire [16:0] map_addr [1:MAP_COUNT];
+    wire [MAP_COUNT:1] map_clear, map_fail;
+    wire [MAP_COUNT:1] map_p1_collision, map_p2_collision;
+    wire [MAP_COUNT:1] map_p1_land, map_p2_land;
+    wire [MAP_COUNT:1] map_p1_drop, map_p2_drop;
+
+    wire selected_clear = active_map && map_clear[map];
+    wire selected_fail = active_map && map_fail[map];
     wire [3:0] player_state, player2_state;
     wire [1:0] player_jump, player2_jump;
-
-    //map1 wires
-    wire map1_p1_collision, map1_p2_collision;
-    wire map1_p1_land, map1_p2_land;
-    wire map1_should_down, map1_should_down2;
-
-    //map2 wires
-    wire map2_p1_collision, map2_p2_collision;
-    wire map2_p1_land, map2_p2_land;
-    wire map2_should_down, map2_should_down2;
-
-    //map3 wires
-    wire map3_p1_collision, map3_p2_collision;
-    wire map3_p1_land, map3_p2_land;
-    wire map3_should_down, map3_should_down2;
-
-    //wires of maps
-    //using selector to choose the final output
-    reg p1_collision, p2_collision;
-    reg p1_land, p2_land;
-    reg should_down, should_down2;
-
-    wire [16:0] map1_addr, map2_addr, map3_addr;
-    wire map1_clear, map2_clear, map3_clear;
-    wire map1_fail, map2_fail, map3_fail;
-    localparam [1:0] IN_PROGRESS = 2'd0, CLEARED = 2'd1, FAILED = 2'd2;
-    reg [1:0] result;
-    reg selected_clear, selected_fail;
 
     assign game_clear = result == CLEARED;
     assign game_fail = result == FAILED;
@@ -88,14 +75,14 @@ module map_switch(
             if (key_down[8:0] == 9'd0)
                 en_key <= 1'b1;
 
-            if (select != 0) begin
+            if (round_active) begin
                 if (enter_pressed) begin
                     select <= 3'd0;
                     en_key <= 1'b0;
                 end
             end else if (en_key) begin
                 if (key_down[0] || key_down[4]) begin
-                    if (map < 3'd3)
+                    if (map < MAP_COUNT)
                         map <= map + 1'b1;
                     en_key <= 1'b0;
                 end else if (key_down[2] || key_down[6]) begin
@@ -117,7 +104,7 @@ module map_switch(
     always @(posedge clk or posedge rst) begin
         if (rst)
             result <= IN_PROGRESS;
-        else if (select == 0 || enter_pressed)
+        else if (!round_active || enter_pressed)
             result <= IN_PROGRESS;
         else if (result == IN_PROGRESS) begin
             if (selected_clear)
@@ -128,131 +115,142 @@ module map_switch(
     end
 
     player_motion player1_motion(
-        .clk(clk), .rst(rst), .active(select != 0),
+        .clk(clk), .rst(rst), .active(round_active),
         .finished(finished), .keys(key_down[7:4]),
-        .collision(p1_collision), .landed(p1_land), .should_drop(should_down),
+        .collision(active_map && map_p1_collision[map]),
+        .landed(active_map && map_p1_land[map]),
+        .should_drop(active_map && map_p1_drop[map]),
         .state(player_state), .jump(player_jump)
     );
 
     player_motion player2_motion(
-        .clk(clk), .rst(rst), .active(select != 0),
+        .clk(clk), .rst(rst), .active(round_active),
         .finished(finished), .keys(key_down[3:0]),
-        .collision(p2_collision), .landed(p2_land), .should_drop(should_down2),
+        .collision(active_map && map_p2_collision[map]),
+        .landed(active_map && map_p2_land[map]),
+        .should_drop(active_map && map_p2_drop[map]),
         .state(player2_state), .jump(player2_jump)
     );
-    wire [9:0] h, v;
-    assign h = vga_h >> 1;
-    assign v = vga_v >> 1;
-
-    wire [16:0] map_and_menu_addr;
-    map_and_menu_addr_gen MAMAG(
-        .h(h), .v(v), .select(select), .map(map),
-        .map1_addr(map1_addr),
-        .map2_addr(map2_addr),
-        .map3_addr(map3_addr),
-        .map_and_menu_addr(map_and_menu_addr)
+    wire [16:0] menu_addr;
+    menu_pixel_addr #(.MAP_COUNT(MAP_COUNT)) menu(
+        .h(vga_h >> 1), .v(vga_v >> 1), .map(map), .addr(menu_addr)
     );
 
-    //indicate which blk_mem to connect
     assign flag_alphabet = flag_cover || game_clear || game_fail;
     always @* begin
-        if(flag_cover) pixel_addr = {1'b0, cover_addr};
-        else if(game_clear) pixel_addr = {1'b0, game_clear_scene_addr};
-        else if(game_fail) pixel_addr = {1'b0, game_fail_scene_addr};
-        else pixel_addr = map_and_menu_addr;
+        if (flag_cover)
+            pixel_addr = {1'b0, cover_addr};
+        else if (game_clear)
+            pixel_addr = {1'b0, game_clear_scene_addr};
+        else if (game_fail)
+            pixel_addr = {1'b0, game_fail_scene_addr};
+        else if (round_active)
+            pixel_addr = map_valid ? map_addr[map] : 17'd0;
+        else
+            pixel_addr = menu_addr;
     end
 
-    // The menu exposes three playable maps.
+    // Original campaign maps.
     map1 Map1(
         .clk(clk),
         .rst(rst),
-        .en((map == 1) && select),
+        .en(round_active && map == 3'd1),
         .paused(finished),
-        .addr(map1_addr),
+        .addr(map_addr[1]),
         .vga_h(vga_h),
         .vga_v(vga_v),
         .player_state(player_state),
         .player2_state(player2_state),
         .player_jump(player_jump),
         .player2_jump(player2_jump),
-        .p1_collision(map1_p1_collision),
-        .p2_collision(map1_p2_collision),
-        .p1_land(map1_p1_land),
-        .p2_land(map1_p2_land),
-        .should_down(map1_should_down),
-        .should_down2(map1_should_down2),
+        .p1_collision(map_p1_collision[1]),
+        .p2_collision(map_p2_collision[1]),
+        .p1_land(map_p1_land[1]),
+        .p2_land(map_p2_land[1]),
+        .should_down(map_p1_drop[1]),
+        .should_down2(map_p2_drop[1]),
         .button1_tounch(),
-        .clear(map1_clear), .fail(map1_fail),
+        .clear(map_clear[1]), .fail(map_fail[1]),
         .invincible(invincible)
     );
 
     map2 Map2(
         .clk(clk),
         .rst(rst),
-        .en((map == 2) && select),
+        .en(round_active && map == 3'd2),
         .paused(finished),
-        .addr(map2_addr),
+        .addr(map_addr[2]),
         .vga_h(vga_h),
         .vga_v(vga_v),
         .player_state(player_state),
         .player2_state(player2_state),
         .player_jump(player_jump),
         .player2_jump(player2_jump),
-        .p1_collision(map2_p1_collision),
-        .p2_collision(map2_p2_collision),
-        .p1_land(map2_p1_land),
-        .p2_land(map2_p2_land),
-        .should_down(map2_should_down),
-        .should_down2(map2_should_down2),
+        .p1_collision(map_p1_collision[2]),
+        .p2_collision(map_p2_collision[2]),
+        .p1_land(map_p1_land[2]),
+        .p2_land(map_p2_land[2]),
+        .should_down(map_p1_drop[2]),
+        .should_down2(map_p2_drop[2]),
         .button1_tounch(),
-        .clear(map2_clear), .fail(map2_fail),
+        .clear(map_clear[2]), .fail(map_fail[2]),
         .invincible(invincible)
     );
 
     map3 Map3(
         .clk(clk),
         .rst(rst),
-        .en((map == 3) && select),
+        .en(round_active && map == 3'd3),
         .paused(finished),
-        .addr(map3_addr),
+        .addr(map_addr[3]),
         .vga_h(vga_h),
         .vga_v(vga_v),
         .player_state(player_state),
         .player2_state(player2_state),
         .player_jump(player_jump),
         .player2_jump(player2_jump),
-        .p1_collision(map3_p1_collision),
-        .p2_collision(map3_p2_collision),
-        .p1_land(map3_p1_land),
-        .p2_land(map3_p2_land),
-        .should_down(map3_should_down),
-        .should_down2(map3_should_down2),
+        .p1_collision(map_p1_collision[3]),
+        .p2_collision(map_p2_collision[3]),
+        .p1_land(map_p1_land[3]),
+        .p2_land(map_p2_land[3]),
+        .should_down(map_p1_drop[3]),
+        .should_down2(map_p2_drop[3]),
         .button1_tounch(),
-        .clear(map3_clear), .fail(map3_fail),
+        .clear(map_clear[3]), .fail(map_fail[3]),
         .invincible(invincible)
     );
 
-    always @* begin
-        {selected_clear, selected_fail, p1_collision, p2_collision, p1_land, p2_land, should_down, should_down2}
-            = 8'b0;
-        if (select != 0) begin
-            case (map)
-                3'd1: {selected_clear, selected_fail, p1_collision, p2_collision, p1_land, p2_land, should_down, should_down2}
-                    = {map1_clear, map1_fail, map1_p1_collision, map1_p2_collision, map1_p1_land,
-                       map1_p2_land, map1_should_down, map1_should_down2};
-                3'd2: {selected_clear, selected_fail, p1_collision, p2_collision, p1_land, p2_land, should_down, should_down2}
-                    = {map2_clear, map2_fail, map2_p1_collision, map2_p2_collision, map2_p1_land,
-                       map2_p2_land, map2_should_down, map2_should_down2};
-                3'd3: {selected_clear, selected_fail, p1_collision, p2_collision, p1_land, p2_land, should_down, should_down2}
-                    = {map3_clear, map3_fail, map3_p1_collision, map3_p2_collision, map3_p1_land,
-                       map3_p2_land, map3_should_down, map3_should_down2};
-                default: ;
-            endcase
-        end
-    end
+    practice_map Map4(
+        .clk(clk),
+        .rst(rst),
+        .en(round_active && map == 3'd4),
+        .paused(finished),
+        .addr(map_addr[4]),
+        .vga_h(vga_h),
+        .vga_v(vga_v),
+        .player_state(player_state),
+        .player2_state(player2_state),
+        .player_jump(player_jump),
+        .player2_jump(player2_jump),
+        .p1_collision(map_p1_collision[4]),
+        .p2_collision(map_p2_collision[4]),
+        .p1_land(map_p1_land[4]),
+        .p2_land(map_p2_land[4]),
+        .should_down(map_p1_drop[4]),
+        .should_down2(map_p2_drop[4]),
+        .clear(map_clear[4]), .fail(map_fail[4]),
+        .invincible(invincible)
+    );
+
 endmodule
 
-module player_motion(
+module player_motion #(
+    parameter integer COYOTE_TICKS = 10_000_000,
+    parameter integer BUFFER_TICKS = 12_000_000,
+    parameter integer MIN_RISE_TICKS = 8_000_000,
+    parameter integer MAX_RISE_TICKS = 70_000_000,
+    parameter integer FALL_TIMEOUT_TICKS = 240_000_000
+)(
     input clk,
     input rst,
     input active,
@@ -266,45 +264,96 @@ module player_motion(
 );
     localparam [3:0] IDLE = 4'd6, RIGHT = 4'd7, LEFT = 4'd8, UP = 4'd9;
     localparam [1:0] GROUNDED = 2'd0, RISING = 2'd1, FALLING = 2'd2;
-    localparam [27:0] RISE_LIMIT = 28'd70000000, FALL_LIMIT = 28'd240000000;
+    localparam COYOTE_WIDTH = $clog2(COYOTE_TICKS + 2);
+    localparam BUFFER_WIDTH = $clog2(BUFFER_TICKS + 2);
+    localparam PHASE_LIMIT = (FALL_TIMEOUT_TICKS > MAX_RISE_TICKS) ?
+                             FALL_TIMEOUT_TICKS : MAX_RISE_TICKS;
+    localparam PHASE_WIDTH = $clog2(PHASE_LIMIT + 2);
 
-    reg [27:0] jump_ticks;
-    // Only one horizontal direction can be active. Down is reserved.
+    reg [COYOTE_WIDTH-1:0] coyote_left;
+    reg [BUFFER_WIDTH-1:0] buffer_left;
+    reg [PHASE_WIDTH-1:0] phase_ticks;
+    reg jump_held, jump_released;
+
     wire move_left = keys[1] && !keys[3];
     wire move_right = keys[3] && !keys[1];
-    wire jump_requested = keys[0];
+    wire jump_pressed = keys[0] && !jump_held;
+    // Coyote time is armed only when stepping off support, never after takeoff.
+    wire can_jump = jump == GROUNDED ||
+                    (jump == FALLING && (landed || coyote_left != 0));
+    wire takeoff = can_jump && (jump_pressed || buffer_left != 0);
+    wire end_ascent = collision || phase_ticks >= MAX_RISE_TICKS ||
+                      ((jump_released || !keys[0]) && phase_ticks >= MIN_RISE_TICKS);
 
     always @(posedge clk or posedge rst) begin
         if (rst) begin
             state <= IDLE;
             jump <= GROUNDED;
-            jump_ticks <= 28'd0;
+            jump_held <= 1'b0;
+            jump_released <= 1'b0;
+            coyote_left <= 0;
+            buffer_left <= 0;
+            phase_ticks <= 0;
         end else if (!active) begin
             state <= IDLE;
             jump <= GROUNDED;
-            jump_ticks <= 28'd0;
+            jump_held <= keys[0];
+            jump_released <= 1'b0;
+            coyote_left <= 0;
+            buffer_left <= 0;
+            phase_ticks <= 0;
         end else if (!finished) begin
+            jump_held <= keys[0];
             if (move_left)
                 state <= LEFT;
             else if (move_right)
                 state <= RIGHT;
-            else if (jump_requested || jump != GROUNDED || should_drop)
+            else if (takeoff || jump != GROUNDED || should_drop)
                 state <= UP;
             else
                 state <= IDLE;
 
-            if (jump == GROUNDED && !jump_requested && !should_drop) begin
-                jump_ticks <= 28'd0;
-            end else if (!should_drop && jump != FALLING &&
-                         !collision && jump_ticks < RISE_LIMIT) begin
+            if (takeoff)
+                buffer_left <= 0;
+            else if (jump_pressed)
+                buffer_left <= BUFFER_TICKS;
+            else if (buffer_left != 0)
+                buffer_left <= buffer_left - 1'b1;
+
+            if (takeoff)
+                coyote_left <= 0;
+            else if (jump == GROUNDED && should_drop)
+                coyote_left <= COYOTE_TICKS;
+            else if (coyote_left != 0)
+                coyote_left <= coyote_left - 1'b1;
+
+            if (takeoff) begin
                 jump <= RISING;
-                jump_ticks <= jump_ticks + 1'b1;
-            end else if (!landed && jump_ticks < FALL_LIMIT) begin
-                jump <= FALLING;
-                jump_ticks <= jump_ticks + 1'b1;
+                phase_ticks <= 0;
+                jump_released <= !keys[0];
             end else begin
-                jump <= GROUNDED;
-                jump_ticks <= 28'd0;
+                case (jump)
+                    GROUNDED: begin
+                        if (should_drop)
+                            jump <= FALLING;
+                    end
+                    RISING: begin
+                        if (!keys[0])
+                            jump_released <= 1'b1;
+                        if (end_ascent) begin
+                            jump <= FALLING;
+                            phase_ticks <= 0;
+                        end else
+                            phase_ticks <= phase_ticks + 1'b1;
+                    end
+                    FALLING: begin
+                        if (landed || phase_ticks >= FALL_TIMEOUT_TICKS) begin
+                            jump <= GROUNDED;
+                            phase_ticks <= 0;
+                        end else
+                            phase_ticks <= phase_ticks + 1'b1;
+                    end
+                endcase
             end
         end
     end

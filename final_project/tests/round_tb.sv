@@ -26,12 +26,12 @@ module round_tb;
         enter;
         enter;
         if (selection !== 1) $fatal(1,"Could not start map 1");
-        force dut.map2_fail=1;
+        force dut.Map2.fail=1;
         repeat (2) @(negedge clk);
         if ({cleared,failed} !== 0) $fatal(1,"Inactive map affected game");
-        release dut.map2_fail;
-        dut.Map1.player_horizontal_displacement=10'd30;
-        dut.Map1.player_vertical_displacement=10'd48;
+        release dut.Map2.fail;
+        dut.Map1.player1_position.horizontal=10'd30;
+        dut.Map1.player1_position.vertical=10'd48;
         dut.Map1.mech_cnt_v=25'd123;
         repeat (2) @(negedge clk);
         if ({cleared,failed} !== 2'b01 || led !== 16'hf0f0 ||
@@ -48,13 +48,13 @@ module round_tb;
         if (selection !== 0 || {cleared,failed} !== 0 || led !== 16'h000f ||
             dut.Map1.player_horizontal_displacement !== 0) $fatal(1,"Menu did not reset round");
         enter;
-        force dut.map1_clear=1;
-        force dut.map1_fail=1;
+        force dut.Map1.clear=1;
+        force dut.Map1.fail=1;
         @(negedge clk);
         if ({cleared,failed} !== 2'b10 || led !== 16'hffff ||
             pixel !== {1'b0,dut.game_clear_scene_addr}) $fatal(1,"Clear should take priority");
-        release dut.map1_clear;
-        release dut.map1_fail;
+        release dut.Map1.clear;
+        release dut.Map1.fail;
         repeat (3) @(negedge clk);
         if (!cleared) $fatal(1,"Clear result was not retained");
         enter;
